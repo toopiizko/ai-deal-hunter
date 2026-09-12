@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#6d5ce7"><meta name="description" content="ค้นหาดีลมือสองที่คุ้มค่า">
+  <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="stylesheet" href="styles.css">
+  <title>AI Deal Hunter</title>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="#home" aria-label="AI Deal Hunter">✦ <span>AI Deal</span> Hunter</a><button class="icon-button" id="installButton" hidden aria-label="ติดตั้งแอป">⇩</button></header>
+  <main>
+    <section id="home" class="hero"><p class="eyebrow">USED TECH, MADE SIMPLE</p><h1>เจอดีลที่ใช่<br><em>ก่อนใคร</em></h1><p>ค้นหา เปรียบเทียบ และตัดสินใจซื้อของมือสองได้อย่างมั่นใจ</p>
+      <label class="search"><span>⌕</span><input id="searchInput" type="search" placeholder="ลองค้นหา iPhone 17 Air" autocomplete="off"><button id="clearSearch" aria-label="ล้างคำค้น">×</button></label>
+    </section>
+    <section class="controls" aria-label="ตัวกรองรายการ">
+      <div class="chips" id="categoryChips"></div>
+      <div class="filter-row"><button class="filter-button" id="filterButton">☷ ตัวกรอง <span id="filterCount"></span></button><label class="sort-select">เรียง: <select id="sortSelect"><option value="score">ดีลที่ดีที่สุด</option><option value="price-asc">ราคาน้อย → มาก</option><option value="price-desc">ราคามาก → น้อย</option><option value="discount">ส่วนลดสูงสุด</option><option value="newest">มาใหม่</option></select></label></div>
+      <div id="filterPanel" class="filter-panel" hidden><label>ราคาสูงสุด <input id="maxPrice" type="range" min="15000" max="30000" step="500" value="30000"><output id="maxPriceOutput">฿30,000</output></label><label>Deal Score ขั้นต่ำ <input id="minScore" type="range" min="0" max="95" step="5" value="0"><output id="minScoreOutput">0</output></label><label>สภาพ <select id="conditionFilter"><option value="all">ทั้งหมด</option><option value="สภาพดีมาก">สภาพดีมาก</option><option value="สภาพดี">สภาพดี</option></select></label><button class="text-button" id="resetFilters">รีเซ็ตตัวกรอง</button></div>
+    </section>
+    <section class="results-head"><div><h2>ดีลแนะนำสำหรับคุณ</h2><p id="resultCount"></p></div><span class="mock-label">ข้อมูลตัวอย่าง</span></section>
+    <section id="listingGrid" class="listing-grid" aria-live="polite"></section>
+    <section id="emptyState" class="empty-state" hidden><div>⌕</div><h2>ไม่พบรายการที่ตรงกัน</h2><p>ลองเปลี่ยนคำค้นหาหรือตัวกรองดูนะ</p><button class="primary-button" id="emptyReset">ล้างตัวกรอง</button></section>
+    <section id="watchSection" class="saved-section"><div class="section-title"><div><p class="eyebrow">SAVED FOR LATER</p><h2>รายการที่ติดตาม</h2></div><button class="text-button" id="openAlerts">จัดการแจ้งเตือน</button></div><div id="watchGrid" class="watch-grid"></div></section>
+  </main>
+  <div id="compareTray" class="compare-tray" hidden><span id="compareCount"></span><button class="primary-button" id="compareButton">เปรียบเทียบ</button><button class="plain-button" id="clearCompare">ล้าง</button></div>
+  <nav class="bottom-nav" aria-label="เมนูหลัก"><a class="active" href="#home">⌂<span>หน้าหลัก</span></a><a href="#searchInput">⌕<span>ค้นหา</span></a><a href="#watchSection">♡<span>ติดตาม</span></a><button id="navAlerts">♧<span>แจ้งเตือน</span></button><button id="settingsButton">⚙<span>ตั้งค่า</span></button></nav>
+  <dialog id="detailDialog" class="modal"></dialog><dialog id="alertDialog" class="modal"></dialog><dialog id="compareDialog" class="modal"></dialog>
+  <script src="app.js"></script>
+</body>
+</html>

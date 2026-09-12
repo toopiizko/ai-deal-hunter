@@ -1,30 +1,116 @@
 <!doctype html>
 <html lang="th">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#6d5ce7"><meta name="description" content="ค้นหาดีลมือสองที่คุ้มค่า">
-  <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f9f8ff">
+  <meta name="description" content="ค้นหาและเปรียบเทียบดีลสินค้ามือสองอย่างชาญฉลาด">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
   <title>AI Deal Hunter</title>
 </head>
 <body>
-  <header class="topbar"><a class="brand" href="#home" aria-label="AI Deal Hunter">✦ <span>AI Deal</span> Hunter</a><button class="icon-button" id="installButton" hidden aria-label="ติดตั้งแอป">⇩</button></header>
-  <main>
-    <section id="home" class="hero"><p class="eyebrow">USED TECH, MADE SIMPLE</p><h1>เจอดีลที่ใช่<br><em>ก่อนใคร</em></h1><p>ค้นหา เปรียบเทียบ และตัดสินใจซื้อของมือสองได้อย่างมั่นใจ</p>
-      <label class="search"><span>⌕</span><input id="searchInput" type="search" placeholder="ลองค้นหา iPhone 17 Air" autocomplete="off"><button id="clearSearch" aria-label="ล้างคำค้น">×</button></label>
-    </section>
-    <section class="controls" aria-label="ตัวกรองรายการ">
-      <div class="chips" id="categoryChips"></div>
-      <div class="filter-row"><button class="filter-button" id="filterButton">☷ ตัวกรอง <span id="filterCount"></span></button><label class="sort-select">เรียง: <select id="sortSelect"><option value="score">ดีลที่ดีที่สุด</option><option value="price-asc">ราคาน้อย → มาก</option><option value="price-desc">ราคามาก → น้อย</option><option value="discount">ส่วนลดสูงสุด</option><option value="newest">มาใหม่</option></select></label></div>
-      <div id="filterPanel" class="filter-panel" hidden><label>ราคาสูงสุด <input id="maxPrice" type="range" min="15000" max="30000" step="500" value="30000"><output id="maxPriceOutput">฿30,000</output></label><label>Deal Score ขั้นต่ำ <input id="minScore" type="range" min="0" max="95" step="5" value="0"><output id="minScoreOutput">0</output></label><label>สภาพ <select id="conditionFilter"><option value="all">ทั้งหมด</option><option value="สภาพดีมาก">สภาพดีมาก</option><option value="สภาพดี">สภาพดี</option></select></label><button class="text-button" id="resetFilters">รีเซ็ตตัวกรอง</button></div>
-    </section>
-    <section class="results-head"><div><h2>ดีลแนะนำสำหรับคุณ</h2><p id="resultCount"></p></div><span class="mock-label">ข้อมูลตัวอย่าง</span></section>
-    <section id="listingGrid" class="listing-grid" aria-live="polite"></section>
-    <section id="emptyState" class="empty-state" hidden><div>⌕</div><h2>ไม่พบรายการที่ตรงกัน</h2><p>ลองเปลี่ยนคำค้นหาหรือตัวกรองดูนะ</p><button class="primary-button" id="emptyReset">ล้างตัวกรอง</button></section>
-    <section id="watchSection" class="saved-section"><div class="section-title"><div><p class="eyebrow">SAVED FOR LATER</p><h2>รายการที่ติดตาม</h2></div><button class="text-button" id="openAlerts">จัดการแจ้งเตือน</button></div><div id="watchGrid" class="watch-grid"></div></section>
-  </main>
-  <div id="compareTray" class="compare-tray" hidden><span id="compareCount"></span><button class="primary-button" id="compareButton">เปรียบเทียบ</button><button class="plain-button" id="clearCompare">ล้าง</button></div>
-  <nav class="bottom-nav" aria-label="เมนูหลัก"><a class="active" href="#home">⌂<span>หน้าหลัก</span></a><a href="#searchInput">⌕<span>ค้นหา</span></a><a href="#watchSection">♡<span>ติดตาม</span></a><button id="navAlerts">♧<span>แจ้งเตือน</span></button><button id="settingsButton">⚙<span>ตั้งค่า</span></button></nav>
-  <dialog id="detailDialog" class="modal"></dialog><dialog id="alertDialog" class="modal"></dialog><dialog id="compareDialog" class="modal"></dialog>
+  <div class="app-shell">
+    <header class="topbar" id="topbar">
+      <button class="brand" data-view="home" aria-label="ไปหน้าหลัก"><span class="brand-mark">◆</span> AI Deal Hunter</button>
+      <button class="icon-button" id="installButton" hidden aria-label="ติดตั้งแอป">↓</button>
+      <button class="icon-button" id="headerAction" aria-label="การแจ้งเตือน"></button>
+    </header>
+
+    <main id="mainContent">
+      <section class="view active" id="homeView" data-page="home">
+        <div class="hero">
+          <span class="pastel-orb orb-one"></span><span class="pastel-orb orb-two"></span>
+          <h1>Find Your Next<br><em>Great Deal</em></h1>
+          <p>Compare. Decide. Buy Smarter.</p>
+          <label class="search-box">
+            <span class="search-icon" aria-hidden="true"></span>
+            <input id="searchInput" type="search" placeholder="Search for iPhone, GPU, Laptop..." autocomplete="off">
+            <button id="clearSearch" class="clear-search" aria-label="ล้างคำค้น">×</button>
+          </label>
+          <div class="category-grid" id="categoryGrid"></div>
+        </div>
+
+        <div class="section-heading">
+          <div><h2>Top Deals for You</h2><p id="resultCount"></p></div>
+          <button class="link-button" data-view="search">See All</button>
+        </div>
+        <div class="deal-grid" id="listingGrid" aria-live="polite"></div>
+        <div id="emptyState" class="empty-state" hidden>
+          <span class="empty-icon">⌕</span><h2>No deals found</h2><p>ลองเปลี่ยนคำค้นหาหรือตัวกรอง</p>
+          <button class="primary-button" id="emptyReset">Clear filters</button>
+        </div>
+      </section>
+
+      <section class="view" id="searchView" data-page="search">
+        <div class="page-header"><button class="back-button" data-view="home" aria-label="ย้อนกลับ">‹</button><h1>Search</h1></div>
+        <label class="search-box compact-search"><span class="search-icon"></span><input id="searchPageInput" type="search" placeholder="Search deals..." autocomplete="off"><button id="clearPageSearch" class="clear-search" aria-label="ล้างคำค้น">×</button></label>
+        <div class="chips" id="categoryChips"></div>
+        <div class="results-toolbar">
+          <span id="searchResultCount">0 results</span>
+          <button class="filter-button" id="filterButton">Filters <span id="filterCount"></span></button>
+          <label class="sort-control">Sort: <select id="sortSelect"><option value="score">Best Deals</option><option value="price-asc">Price: Low to High</option><option value="price-desc">Price: High to Low</option><option value="discount">Biggest Saving</option><option value="newest">Newest</option></select></label>
+        </div>
+        <div id="filterPanel" class="filter-panel" hidden>
+          <label><span>Max price</span><input id="maxPrice" type="range" min="15000" max="30000" step="500" value="30000"><output id="maxPriceOutput">฿30,000</output></label>
+          <label><span>Minimum Deal Score</span><input id="minScore" type="range" min="0" max="95" step="5" value="0"><output id="minScoreOutput">0</output></label>
+          <label><span>Condition</span><select id="conditionFilter"><option value="all">All</option><option value="สภาพดีมาก">Excellent</option><option value="สภาพดี">Good</option></select></label>
+          <button class="secondary-button" id="resetFilters">Reset filters</button>
+        </div>
+        <div class="search-results" id="searchResults"></div>
+      </section>
+
+      <section class="view" id="watchView" data-page="watch">
+        <div class="page-header"><h1>Watchlist</h1><button class="round-add" aria-label="สร้างรายการติดตาม">+</button></div>
+        <div class="chips static"><button class="chip active">All</button><button class="chip">iPhone</button><button class="chip">Laptop</button><button class="chip">GPU</button></div>
+        <div class="stack-list" id="watchList"></div>
+      </section>
+
+      <section class="view" id="alertsView" data-page="alerts">
+        <div class="page-header"><h1>Alerts</h1><button class="round-add" id="addAlertButton" aria-label="เพิ่มการแจ้งเตือน">+</button></div>
+        <div class="segmented"><button class="active">Active</button><button>History</button></div>
+        <div class="stack-list" id="alertsList"></div>
+      </section>
+
+      <section class="view" id="settingsView" data-page="settings">
+        <div class="page-header"><h1>Settings</h1></div>
+        <div class="profile-card"><span class="profile-avatar">●</span><div><strong>Guest User</strong><small>ข้อมูลบันทึกอยู่ในอุปกรณ์นี้</small></div><span>›</span></div>
+        <div class="settings-list">
+          <button data-setting="appearance"><span>◐</span><strong>Appearance</strong><small id="appearanceValue">Light</small><b>›</b></button>
+          <button data-setting="currency"><span>◎</span><strong>Currency</strong><small>THB (฿)</small><b>›</b></button>
+          <button data-setting="notifications"><span>♧</span><strong>Notifications</strong><small id="notificationValue">On</small><b>›</b></button>
+          <button data-setting="storage"><span>▣</span><strong>Data & Storage</strong><small>Local only</small><b>›</b></button>
+          <button data-setting="help"><span>?</span><strong>Help & Feedback</strong><small></small><b>›</b></button>
+          <button data-setting="about"><span>ⓘ</span><strong>About</strong><small>Phase 1</small><b>›</b></button>
+        </div>
+      </section>
+
+      <section class="view" id="compareView" data-page="compare">
+        <div class="page-header"><button class="back-button" data-view="home" aria-label="ย้อนกลับ">‹</button><h1>Compare (<span id="comparePageCount">0</span>)</h1><button class="link-button" id="clearComparePage">Clear All</button></div>
+        <div id="compareContent"></div>
+      </section>
+    </main>
+
+    <aside id="compareTray" class="compare-tray" hidden aria-live="polite">
+      <button id="compareTrayOpen"><span id="compareCount">1 selected</span><strong>Compare →</strong></button>
+      <button id="clearCompare" class="tray-close" aria-label="ล้างรายการเปรียบเทียบ">×</button>
+    </aside>
+
+    <nav class="bottom-nav" aria-label="เมนูหลัก">
+      <button class="active" data-view="home"><span class="nav-icon" data-icon="home"></span><small>Home</small></button>
+      <button data-view="search"><span class="nav-icon" data-icon="search"></span><small>Search</small></button>
+      <button data-view="watch"><span class="nav-icon" data-icon="heart"></span><small>Watchlist</small></button>
+      <button data-view="alerts"><span class="nav-icon" data-icon="bell"></span><small>Alerts</small></button>
+      <button data-view="settings"><span class="nav-icon" data-icon="settings"></span><small>Settings</small></button>
+    </nav>
+  </div>
+
+  <section id="detailScreen" class="detail-screen" hidden aria-label="รายละเอียดสินค้า"></section>
+  <dialog id="optionsSheet" class="bottom-sheet"></dialog>
+  <dialog id="alertSheet" class="bottom-sheet"></dialog>
+  <dialog id="messageSheet" class="bottom-sheet"></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="app.js"></script>
 </body>
 </html>

@@ -4,50 +4,157 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#8b7cf6" />
-    <meta
-      name="description"
-      content="AI Deal Hunter Phase 1 prototype foundation using mock and local data."
-    />
+    <meta name="description" content="Find and evaluate second-hand deals with explainable mock Deal and Risk Scores." />
     <title>AI Deal Hunter</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%238b7cf6'/%3E%3Cpath d='M19 32 32 19l13 13-13 13Z' fill='none' stroke='white' stroke-width='4'/%3E%3C/svg%3E" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <div class="app-shell">
       <header class="app-header">
-        <a class="brand" href="./" aria-label="AI Deal Hunter home">
+        <button class="brand" type="button" data-nav="home" aria-label="AI Deal Hunter home">
           <span class="brand-mark" aria-hidden="true">◇</span>
           <span>AI Deal Hunter</span>
-        </a>
-        <span class="phase-badge">Phase 1A</span>
+        </button>
+        <span class="phase-badge">Mock data</span>
       </header>
 
-      <main class="foundation" id="app" tabindex="-1">
-        <section class="hero" aria-labelledby="page-title">
-          <p class="eyebrow">Static prototype foundation</p>
-          <h1 id="page-title">Find Your Next Great Deal</h1>
-          <p class="hero-copy">Compare. Decide. Buy Smarter.</p>
-        </section>
-
-        <section class="foundation-card" aria-labelledby="foundation-title">
-          <div>
-            <p class="status-label"><span class="status-dot" aria-hidden="true"></span> Foundation ready</p>
-            <h2 id="foundation-title">Local, deterministic, and testable</h2>
-            <p class="muted">
-              This shell verifies the Phase 1A data, scoring, risk, price-history, and persistence foundations.
-              Feature screens begin in later approved phases.
-            </p>
+      <main id="app" tabindex="-1">
+        <section id="discovery-view">
+          <div class="hero" id="home-hero">
+            <p class="eyebrow">Smarter second-hand shopping</p>
+            <h1>Find Your Next Great Deal</h1>
+            <p class="hero-copy">Compare. Decide. Buy Smarter.</p>
           </div>
-          <dl class="foundation-stats" id="foundation-stats" aria-live="polite">
-            <div><dt>Listings</dt><dd>Loading…</dd></div>
-            <div><dt>Categories</dt><dd>Loading…</dd></div>
-            <div><dt>Top Deal Score</dt><dd>Loading…</dd></div>
-            <div><dt>Local state</dt><dd>Checking…</dd></div>
-          </dl>
+
+          <section class="search-panel" aria-labelledby="search-title">
+            <h2 class="sr-only" id="search-title">Search listings</h2>
+            <label class="search-box" for="search-input">
+              <span class="search-icon" aria-hidden="true">⌕</span>
+              <input id="search-input" type="search" placeholder="Search iPhone, RTX 5070, office chair…" autocomplete="off" />
+              <button class="clear-search" id="clear-search" type="button" aria-label="Clear search" hidden>×</button>
+            </label>
+          </section>
+
+          <section class="categories" aria-labelledby="categories-title">
+            <div class="section-heading compact-heading">
+              <div>
+                <p class="eyebrow">Browse</p>
+                <h2 id="categories-title">Categories</h2>
+              </div>
+            </div>
+            <div class="category-list" id="category-list" aria-label="Category shortcuts"></div>
+          </section>
+
+          <section class="deals-section" aria-labelledby="deals-title">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow" id="results-kicker">Recommended</p>
+                <h2 id="deals-title">Best Deals</h2>
+                <p class="result-count" id="result-count" aria-live="polite"></p>
+              </div>
+              <button class="filter-trigger" id="filter-trigger" type="button" aria-haspopup="dialog">
+                <span aria-hidden="true">☷</span>
+                Filters
+                <span class="filter-count" id="filter-count" hidden>0</span>
+              </button>
+            </div>
+
+            <div class="discovery-controls">
+              <label class="sort-control" for="sort-select">
+                <span>Sort</span>
+                <select id="sort-select">
+                  <option value="best-deals">Best Deals</option>
+                  <option value="deal-score">Deal Score</option>
+                  <option value="price-low">Price — Low to High</option>
+                  <option value="price-high">Price — High to Low</option>
+                  <option value="largest-discount">Largest Discount</option>
+                  <option value="newest">Newest</option>
+                  <option value="largest-price-drop">Largest Price Drop</option>
+                  <option value="near-me">Near Me · mock distance</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="active-filters" id="active-filters" aria-label="Active filters"></div>
+            <div class="deal-grid" id="deal-grid" aria-live="polite"></div>
+
+            <div class="empty-state" id="empty-state" hidden>
+              <span class="empty-icon" aria-hidden="true">⌕</span>
+              <h3>No deals match yet</h3>
+              <p>Try a broader search or clear some filters.</p>
+              <button class="secondary-button" id="empty-clear" type="button">Clear search and filters</button>
+            </div>
+          </section>
         </section>
 
-        <p class="mock-notice">Mock data for prototype. Not real historical market data.</p>
+        <section class="placeholder-view" id="placeholder-view" hidden aria-live="polite">
+          <span class="placeholder-icon" id="placeholder-icon" aria-hidden="true">◇</span>
+          <p class="eyebrow">Later Phase 1 checkpoint</p>
+          <h1 id="placeholder-title">Coming soon</h1>
+          <p id="placeholder-copy">This area is intentionally reserved for a later approved phase.</p>
+          <button class="primary-button" type="button" data-nav="home">Back to Discover</button>
+        </section>
       </main>
     </div>
+
+    <dialog class="filter-dialog" id="filter-dialog" aria-labelledby="filter-title">
+      <form class="filter-form" id="filter-form">
+        <header class="filter-header">
+          <div>
+            <p class="eyebrow">Refine results</p>
+            <h2 id="filter-title">Filters</h2>
+          </div>
+          <button class="icon-button" id="close-filters" type="button" aria-label="Close filters">×</button>
+        </header>
+
+        <div class="filter-fields">
+          <label>Category<select name="category" data-options="category"></select></label>
+          <div class="field-pair">
+            <label>Minimum price<input name="minPrice" type="number" min="0" step="100" placeholder="฿0" /></label>
+            <label>Maximum price<input name="maxPrice" type="number" min="0" step="100" placeholder="Any" /></label>
+          </div>
+          <label>Minimum Deal Score<input name="minDealScore" type="number" min="0" max="100" step="5" placeholder="Any score" /></label>
+          <label>Condition<select name="condition" data-options="condition"></select></label>
+          <label>Location<select name="location" data-options="location"></select></label>
+          <label>Seller<select name="seller" data-options="seller"></select></label>
+          <label>Listing age
+            <select name="maxListingAgeDays">
+              <option value="">Any age</option>
+              <option value="1">Last 24 hours</option>
+              <option value="3">Last 3 days</option>
+              <option value="7">Last 7 days</option>
+              <option value="30">Last 30 days</option>
+            </select>
+          </label>
+          <label>Minimum price drop<input name="minPriceDropPercent" type="number" min="0" max="100" step="1" placeholder="Any drop %" /></label>
+          <label>Source<select name="source" data-options="source"></select></label>
+          <label>AI recommendation
+            <select name="recommendation">
+              <option value="">Any recommendation</option>
+              <option value="BUY">BUY</option>
+              <option value="NEGOTIATE">NEGOTIATE</option>
+              <option value="SKIP">SKIP</option>
+            </select>
+          </label>
+        </div>
+
+        <footer class="filter-actions">
+          <button class="text-button" id="clear-filters" type="button">Clear all</button>
+          <button class="primary-button" type="submit">Apply filters</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+    <nav class="bottom-nav" aria-label="Primary navigation">
+      <button type="button" data-nav="home" aria-current="page"><span aria-hidden="true">⌂</span><span>Home</span></button>
+      <button type="button" data-nav="search"><span aria-hidden="true">⌕</span><span>Search</span></button>
+      <button type="button" data-nav="watchlist"><span aria-hidden="true">♡</span><span>Watchlist</span></button>
+      <button type="button" data-nav="alerts"><span aria-hidden="true">♢</span><span>Alerts</span></button>
+      <button type="button" data-nav="settings"><span aria-hidden="true">⚙</span><span>Settings</span></button>
+    </nav>
 
     <script type="module" src="./src/app.js"></script>
   </body>

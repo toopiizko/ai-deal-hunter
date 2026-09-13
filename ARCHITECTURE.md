@@ -2,7 +2,7 @@
 
 ## Current verified state
 
-The repository is documentation-only. The tracked files are the Phase 1 specification, the project plan, and `.gitkeep`. There is no `index.html`, application code, mock catalog, persistence layer, PWA manifest, service worker, icon set, or backend implementation to inspect or reuse.
+The repository has a dependency-free static client-side foundation built with HTML, CSS, and JavaScript modules. It includes a mock catalog, deterministic Deal/Risk scoring, mock Price History data, versioned local persistence, a runnable application shell, and browser/Node test files. The local Phase 1B work adds Discovery UI and pure search/filter/sort logic. There is no backend, framework, PWA manifest, service worker, or installable icon set yet.
 
 ## Intended Phase 1 architecture
 

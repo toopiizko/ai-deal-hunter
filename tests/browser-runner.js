@@ -1,5 +1,13 @@
 import { mockListings } from "../src/data/listings.js";
 import { calculateDealScore, DEAL_SCORE_WEIGHTS } from "../src/domain/deal-score.js";
+import {
+  discoverListings,
+  EMPTY_FILTERS,
+  enrichListings,
+  filterListings,
+  SORT_MODES,
+  sortListings,
+} from "../src/domain/discovery.js";
 import { summarizePriceHistory } from "../src/domain/price-history.js";
 import { calculateRiskScore, getRiskLevel } from "../src/domain/risk-score.js";
 import { createMemoryStorage, createPersistence, STORAGE_KEY } from "../src/storage/local-store.js";
@@ -15,6 +23,8 @@ const evaluated = mockListings.map((listing) => {
   const deal = calculateDealScore(listing, risk);
   return { listing, risk, deal };
 });
+const discoveryListings = enrichListings(mockListings);
+const availableListings = filterListings(discoveryListings);
 
 assert("mock catalog contains varied categories", new Set(mockListings.map(({ product }) => product.category)).size >= 4);
 assert("Deal Scores are deterministic", evaluated.every(({ listing, risk, deal }) => JSON.stringify(deal) === JSON.stringify(calculateDealScore(listing, risk))));
@@ -44,6 +54,50 @@ persistence.reset();
 assert("persistence reset restores defaults", persistence.load().compare.length === 0);
 const invalidState = createPersistence(createMemoryStorage({ [STORAGE_KEY]: "not-json" }));
 assert("persistence recovers from invalid JSON", invalidState.load().watchlists.length === 0);
+
+assert("search finds iPhone listings", filterListings(discoveryListings, EMPTY_FILTERS, "iPhone").length >= 2);
+assert("search finds RTX 5070", filterListings(discoveryListings, EMPTY_FILTERS, "RTX 5070").length === 1);
+assert("search finds office chair", filterListings(discoveryListings, EMPTY_FILTERS, "Office chair").length === 1);
+assert("empty search state is possible", filterListings(discoveryListings, EMPTY_FILTERS, "no matching product").length === 0);
+
+const filterCases = {
+  category: "Smartphones",
+  minPrice: "15000",
+  maxPrice: "20000",
+  minDealScore: "75",
+  condition: "Very good",
+  location: "Bangkok",
+  seller: "Narin",
+  maxListingAgeDays: "3",
+  minPriceDropPercent: "8",
+  source: "Mock Marketplace",
+  recommendation: "BUY",
+};
+for (const [name, value] of Object.entries(filterCases)) {
+  const filtered = filterListings(discoveryListings, { ...EMPTY_FILTERS, [name]: value });
+  assert(`${name} filter returns a narrowed result`, filtered.length > 0 && filtered.length < discoveryListings.length);
+}
+
+const sortingChecks = {
+  [SORT_MODES.BEST_DEALS]: (items) => items[0].deal.score === Math.max(...availableListings.map(({ deal }) => deal.score)),
+  [SORT_MODES.DEAL_SCORE]: (items) => items[0].deal.score === Math.max(...availableListings.map(({ deal }) => deal.score)),
+  [SORT_MODES.PRICE_LOW]: (items) => items[0].currentPrice === Math.min(...availableListings.map(({ currentPrice }) => currentPrice)),
+  [SORT_MODES.PRICE_HIGH]: (items) => items[0].currentPrice === Math.max(...availableListings.map(({ currentPrice }) => currentPrice)),
+  [SORT_MODES.LARGEST_DISCOUNT]: (items) => items[0].discountPercent === Math.max(...availableListings.map(({ discountPercent }) => discountPercent)),
+  [SORT_MODES.NEWEST]: (items) => items[0].listedAt === "2026-09-12",
+  [SORT_MODES.LARGEST_PRICE_DROP]: (items) => items[0].priceDropPercent === Math.max(...availableListings.map(({ priceDropPercent }) => priceDropPercent)),
+  [SORT_MODES.NEAR_ME]: (items) => items[0].distanceKm === Math.min(...availableListings.map(({ distanceKm }) => distanceKm)),
+};
+for (const [mode, check] of Object.entries(sortingChecks)) {
+  assert(`${mode} sorting returns expected first listing`, check(sortListings(availableListings, mode)));
+}
+
+const combined = discoverListings(discoveryListings, {
+  query: "iPhone",
+  filters: { ...EMPTY_FILTERS, category: "Smartphones", maxPrice: "25000" },
+  sort: SORT_MODES.PRICE_LOW,
+});
+assert("combined search, filters, and sort returns valid results", combined.length > 0 && combined.every(({ product, currentPrice }) => product.category === "Smartphones" && currentPrice <= 25000));
 
 const list = document.querySelector("#results");
 for (const result of results) {

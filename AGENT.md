@@ -2,13 +2,7 @@
 
 ## Project state
 
-The verified repository currently contains documentation only:
-
-- `PHASE1_FINAL_SPEC.md`
-- `AI_Deal_Hunter_Project_Plan.md`
-- `.gitkeep`
-
-No application source code or runnable Phase 1 implementation exists yet.
+The repository contains the approved project documentation and a dependency-free static client-side implementation. Phase 1A established the mock catalog, Deal/Risk scoring, Price History data, persistence, tests, and runnable shell. Phase 1B adds Home/Discover, search, filters, sorting, deal cards, and mobile navigation. Later Phase 1 checkpoints remain incomplete until explicitly implemented and verified.
 
 ## Source of truth
 

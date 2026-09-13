@@ -110,6 +110,40 @@ select:focus-visible {
   gap: var(--space-3);
 }
 
+.connection-status {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: center;
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid #ead487;
+  border-radius: var(--radius-small);
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+}
+
+.connection-status > span {
+  font-size: 1.25rem;
+}
+
+.connection-status strong,
+.connection-status small {
+  display: block;
+}
+
+.connection-status small {
+  margin-top: var(--space-1);
+  line-height: 1.4;
+}
+
+.product-actions a[aria-disabled="true"] {
+  border-color: var(--color-border);
+  background: var(--color-surface-soft);
+  color: var(--color-muted);
+  cursor: not-allowed;
+}
+
 .brand {
   display: inline-flex;
   align-items: center;

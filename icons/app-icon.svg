@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">AI Deal Hunter</title>
+  <rect width="512" height="512" rx="112" fill="#8b7cf6"/>
+  <circle cx="256" cy="256" r="154" fill="#eeeafd"/>
+  <path d="M170 257 256 171l86 86-86 86Z" fill="none" stroke="#5c4db7" stroke-width="34" stroke-linejoin="round"/>
+  <circle cx="256" cy="257" r="24" fill="#bfead7" stroke="#22735a" stroke-width="12"/>
+</svg>

@@ -31,6 +31,7 @@ import {
   upsertAlert,
 } from "./domain/tracking.js";
 import { createPersistence } from "./storage/local-store.js";
+import { setupPwa } from "./pwa.js";
 
 const listings = enrichListings(mockListings);
 const formatter = new Intl.NumberFormat("th-TH", {
@@ -55,6 +56,7 @@ const elements = {
   compareContent: document.querySelector("#compare-content"),
   compareCount: document.querySelector("#compare-count"),
   compareView: document.querySelector("#compare-view"),
+  connectionStatus: document.querySelector("#connection-status"),
   dealsTitle: document.querySelector("#deals-title"),
   detailContent: document.querySelector("#detail-content"),
   detailView: document.querySelector("#detail-view"),
@@ -92,6 +94,8 @@ let detailTab = "overview";
 let historyRange = "30D";
 let discoveryScrollY = 0;
 let toastTimer;
+let lastOnlineStatus;
+let connectionOnline = navigator.onLine;
 
 function persistenceState() {
   try {
@@ -455,7 +459,7 @@ function detailActions(listing) {
       <button type="button" data-detail-action="watch" aria-pressed="${watched}"><span aria-hidden="true">${watched ? "♥" : "♡"}</span><span>${watched ? "Watching" : "Add to Watchlist"}</span></button>
       <button type="button" data-detail-action="alert" aria-pressed="${alerted}"><span aria-hidden="true">♢</span><span>${alerted ? "Alert set" : "Set Alert"}</span></button>
       <button type="button" data-detail-action="compare" aria-pressed="${compared}"><span aria-hidden="true">⇄</span><span>${compared ? "Comparing" : "Compare"}</span></button>
-      <a href="${escapeHtml(listing.source.url)}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">↗</span><span>Open Source Listing</span></a>
+      <a href="${escapeHtml(listing.source.url)}" target="_blank" rel="noopener noreferrer" data-source-listing aria-disabled="${!connectionOnline}"><span aria-hidden="true">↗</span><span>${connectionOnline ? "Open Source Listing" : "Source unavailable offline"}</span></a>
     </div>
   `;
 }
@@ -573,6 +577,15 @@ function showToast(message) {
   toastTimer = setTimeout(() => {
     elements.toast.hidden = true;
   }, 2200);
+}
+
+function handleConnectionChange(isOnline) {
+  connectionOnline = isOnline;
+  document.body.classList.toggle("is-offline", !isOnline);
+  elements.connectionStatus.hidden = isOnline;
+  if (lastOnlineStatus === false && isOnline) showToast("Back online · source listings are available again");
+  lastOnlineStatus = isOnline;
+  if (selectedListing) renderDetail();
 }
 
 function toggleSaved(id) {
@@ -865,8 +878,12 @@ elements.detailContent.addEventListener("click", (event) => {
   const action = event.target.closest("[data-detail-action]");
   const related = event.target.closest("[data-open-detail]");
   const point = event.target.closest("[data-chart-price]");
+  const sourceLink = event.target.closest("[data-source-listing]");
 
-  if (tab) {
+  if (sourceLink && !connectionOnline) {
+    event.preventDefault();
+    showToast("Source listings require an internet connection");
+  } else if (tab) {
     detailTab = tab.dataset.detailTab;
     renderDetail();
   } else if (range) {
@@ -1079,4 +1096,8 @@ renderWatchlists();
 renderAlerts();
 renderCompare();
 navigate(currentView);
+setupPwa({
+  onConnectionChange: handleConnectionChange,
+  onUpdate: () => showToast("A fresh app version is ready for the next load"),
+});
 document.documentElement.dataset.appReady = "true";

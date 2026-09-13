@@ -15,4 +15,4 @@ Important constraints:
 - The iPhone/used-device scenario is the primary showcase, with enough varied mock listings to exercise other categories and states.
 - Mock historical values and mock analysis must be clearly labeled; external listing actions are unavailable offline.
 
-Current rebuild status: documentation and Phase 1A–1C are committed on branch `phase1-rebuild`. Phase 1D Watchlists, local mock Alerts, and Compare are implemented locally and awaiting checkpoint approval. Settings polish and PWA/offline work remain assigned to later Phase 1 checkpoints.
+Current rebuild status: documentation and Phase 1A–1D are committed on branch `phase1-rebuild`. Phase 1E PWA installation, caching, and offline behavior are implemented locally and awaiting checkpoint approval. Final settings polish and acceptance work remain assigned to the next Phase 1 checkpoint.

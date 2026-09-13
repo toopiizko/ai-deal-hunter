@@ -2,7 +2,7 @@
 
 ## Current verified state
 
-The repository has a dependency-free static client-side application built with HTML, CSS, and JavaScript modules. It includes a mock catalog, deterministic Deal/Risk scoring, mock Price History data, versioned local persistence, Discovery, Product Detail, an inline SVG Price History chart, mock analysis, seller information, and related listings. The local Phase 1D work adds pure tracking-domain operations, named Watchlists with target conditions, local mock Alert management, persisted compare selections, a compact compare bar, and a dedicated comparison view with a deterministic recommendation. Browser and Node test files cover the domain behavior. There is no backend, framework, PWA manifest, service worker, or installable icon set yet.
+The repository has a dependency-free static client-side application built with HTML, CSS, and JavaScript modules. It includes a mock catalog, deterministic Deal/Risk scoring, mock Price History data, versioned local persistence, Discovery, Product Detail, tracking, and comparison flows. Phase 1E adds a Web App Manifest, local scalable icons, service-worker registration, a versioned application-shell cache, old-cache cleanup, network-first online updates, cached offline fallbacks, and visible connection state. Browser and Node test files cover domain behavior, and a browser PWA runner verifies installation and cache lifecycle. There is no backend or framework.
 
 ## Intended Phase 1 architecture
 

@@ -9,6 +9,13 @@ import {
   sortListings,
 } from "../src/domain/discovery.js";
 import { summarizePriceHistory } from "../src/domain/price-history.js";
+import {
+  buildHistoryViewModel,
+  buildMockAnalysis,
+  DEAL_FACTOR_LABELS,
+  getSimilarListings,
+  HISTORY_RANGES,
+} from "../src/domain/product-detail.js";
 import { calculateRiskScore, getRiskLevel } from "../src/domain/risk-score.js";
 import { createMemoryStorage, createPersistence, STORAGE_KEY } from "../src/storage/local-store.js";
 
@@ -98,6 +105,18 @@ const combined = discoverListings(discoveryListings, {
   sort: SORT_MODES.PRICE_LOW,
 });
 assert("combined search, filters, and sort returns valid results", combined.length > 0 && combined.every(({ product, currentPrice }) => product.category === "Smartphones" && currentPrice <= 25000));
+
+const detailListing = discoveryListings.find(({ id }) => id === "listing-iphone-17-air-256");
+for (const range of HISTORY_RANGES) {
+  const historyView = buildHistoryViewModel(detailListing, range);
+  assert(`${range} Price History builds chart coordinates`, historyView.points.length > 1 && historyView.points.every(({ x, y }) => Number.isFinite(x) && Number.isFinite(y)));
+  assert(`${range} Price History statistics are complete`, ["current", "high", "low", "average", "fairPrice", "listingCount", "percentageChange"].every((key) => Number.isFinite(historyView.summary[key])));
+  assert(`${range} Price History recommendation is valid`, ["BUY", "WAIT", "WATCH"].includes(historyView.recommendation.action));
+}
+assert("Deal Score exposes all documented factor labels", Object.values(DEAL_FACTOR_LABELS).length === 7);
+assert("similar products share the selected category", getSimilarListings(detailListing, discoveryListings).every(({ id, product }) => id !== detailListing.id && product.category === detailListing.product.category));
+const suspiciousAnalysis = buildMockAnalysis(discoveryListings.find(({ id }) => id === "listing-iphone-17-pro-suspicious"));
+assert("mock analysis lets high risk override an attractive price", suspiciousAnalysis.action === "SKIP");
 
 const list = document.querySelector("#results");
 for (const result of results) {

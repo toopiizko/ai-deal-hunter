@@ -2,7 +2,7 @@
 
 ## Current verified state
 
-The repository has a dependency-free static client-side foundation built with HTML, CSS, and JavaScript modules. It includes a mock catalog, deterministic Deal/Risk scoring, mock Price History data, versioned local persistence, a runnable application shell, and browser/Node test files. The local Phase 1B work adds Discovery UI and pure search/filter/sort logic. There is no backend, framework, PWA manifest, service worker, or installable icon set yet.
+The repository has a dependency-free static client-side application built with HTML, CSS, and JavaScript modules. It includes a mock catalog, deterministic Deal/Risk scoring, mock Price History data, versioned local persistence, Discovery UI, and pure search/filter/sort logic. The local Phase 1C work adds Product Detail, an inline SVG Price History chart, range-specific statistics and recommendations, mock analysis, seller and related-listing views, and temporary persisted Watchlist, Alert, and Compare actions. Browser and Node test files cover the domain behavior. There is no backend, framework, PWA manifest, service worker, or installable icon set yet.
 
 ## Intended Phase 1 architecture
 

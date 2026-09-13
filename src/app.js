@@ -14,6 +14,22 @@ import {
   getSimilarListings,
   HISTORY_RANGES,
 } from "./domain/product-detail.js";
+import {
+  ALERT_TYPES,
+  clearCompare,
+  createWatchlist,
+  deleteWatchlist,
+  evaluateAlert,
+  getCompareRecommendation,
+  listingMeetsTargets,
+  removeAlert,
+  removeCompareListing,
+  setWatchlistMembership,
+  toggleAlertEnabled,
+  toggleCompareListing,
+  updateTargetConditions,
+  upsertAlert,
+} from "./domain/tracking.js";
 import { createPersistence } from "./storage/local-store.js";
 
 const listings = enrichListings(mockListings);
@@ -26,10 +42,19 @@ const compactFormatter = new Intl.NumberFormat("en", { notation: "compact", maxi
 
 const elements = {
   activeFilters: document.querySelector("#active-filters"),
+  alertDialog: document.querySelector("#alert-dialog"),
+  alertForm: document.querySelector("#alert-form"),
+  alertsContent: document.querySelector("#alerts-content"),
+  alertsView: document.querySelector("#alerts-view"),
   appHeader: document.querySelector(".app-header"),
   bottomNav: document.querySelector(".bottom-nav"),
   categoryList: document.querySelector("#category-list"),
   clearSearch: document.querySelector("#clear-search"),
+  compareBar: document.querySelector("#compare-bar"),
+  compareChips: document.querySelector("#compare-chips"),
+  compareContent: document.querySelector("#compare-content"),
+  compareCount: document.querySelector("#compare-count"),
+  compareView: document.querySelector("#compare-view"),
   dealsTitle: document.querySelector("#deals-title"),
   detailContent: document.querySelector("#detail-content"),
   detailView: document.querySelector("#detail-view"),
@@ -49,7 +74,13 @@ const elements = {
   resultsKicker: document.querySelector("#results-kicker"),
   search: document.querySelector("#search-input"),
   sort: document.querySelector("#sort-select"),
+  targetDialog: document.querySelector("#target-dialog"),
+  targetForm: document.querySelector("#target-form"),
   toast: document.querySelector("#toast"),
+  watchlistContent: document.querySelector("#watchlist-content"),
+  watchlistDialog: document.querySelector("#watchlist-dialog"),
+  watchlistForm: document.querySelector("#watchlist-form"),
+  watchlistView: document.querySelector("#watchlist-view"),
 };
 
 let appliedFilters = { ...EMPTY_FILTERS };
@@ -71,10 +102,34 @@ function persistenceState() {
 }
 
 const persistence = persistenceState();
-const initialState = persistence?.load();
-let savedIds = new Set(initialState?.preferences.favoriteListingIds ?? []);
-let alertIds = new Set((initialState?.alerts ?? []).filter(({ listingId }) => listingId).map(({ listingId }) => listingId));
-let compareIds = new Set(initialState?.compare ?? []);
+let appState = persistence?.load() ?? {
+  schemaVersion: 1,
+  watchlists: [],
+  targetConditions: {},
+  alerts: [],
+  compare: [],
+  preferences: {},
+};
+
+const legacyFavorites = appState.preferences.favoriteListingIds ?? [];
+if (legacyFavorites.length && !appState.watchlists.some(({ listingIds = [] }) => listingIds.length)) {
+  appState = createWatchlist(appState, "Saved Deals");
+  const migrated = appState.watchlists.at(-1);
+  legacyFavorites.forEach((listingId) => {
+    appState = setWatchlistMembership(appState, migrated.id, listingId, true);
+  });
+  appState = { ...appState, preferences: { ...appState.preferences, favoriteListingIds: [] } };
+  persistence?.save(appState);
+}
+
+function saveAppState(nextState) {
+  appState = persistence ? persistence.save(nextState) : nextState;
+  return appState;
+}
+
+function watchedListingIds() {
+  return new Set(appState.watchlists.flatMap(({ listingIds = [] }) => listingIds));
+}
 
 function escapeHtml(value) {
   return String(value)
@@ -144,7 +199,7 @@ function renderActiveFilters() {
 
 function dealCard(listing) {
   const visual = categoryVisual(listing.product.category);
-  const isSaved = savedIds.has(listing.id);
+  const isSaved = watchedListingIds().has(listing.id);
   const riskClass = listing.risk.level.toLocaleLowerCase().replaceAll(" ", "-");
   return `
     <article class="deal-card" data-listing-id="${listing.id}">
@@ -172,6 +227,7 @@ function dealCard(listing) {
         <div class="card-footer">
           <span class="risk-pill risk-${riskClass}"><span aria-hidden="true">●</span> ${escapeHtml(listing.risk.level)} Risk</span>
           <span class="recommendation">${escapeHtml(listing.deal.recommendation)}</span>
+          <button class="card-compare" type="button" data-card-compare="${listing.id}" aria-pressed="${appState.compare.includes(listing.id)}">${appState.compare.includes(listing.id) ? "Selected" : "Compare"}</button>
         </div>
       </div>
     </article>
@@ -187,6 +243,7 @@ function renderDeals() {
   elements.clearSearch.hidden = query.length === 0;
   renderCategories();
   renderActiveFilters();
+  renderCompareBar();
 }
 
 function productInfo(listing) {
@@ -390,9 +447,9 @@ function sellerPanel(listing) {
 }
 
 function detailActions(listing) {
-  const watched = savedIds.has(listing.id);
-  const alerted = alertIds.has(listing.id);
-  const compared = compareIds.has(listing.id);
+  const watched = watchedListingIds().has(listing.id);
+  const alerted = appState.alerts.some(({ listingId }) => listingId === listing.id);
+  const compared = appState.compare.includes(listing.id);
   return `
     <div class="product-actions" aria-label="Product actions">
       <button type="button" data-detail-action="watch" aria-pressed="${watched}"><span aria-hidden="true">${watched ? "♥" : "♡"}</span><span>${watched ? "Watching" : "Add to Watchlist"}</span></button>
@@ -456,6 +513,7 @@ function openDetail(id) {
   elements.detailView.hidden = false;
   document.body.classList.add("detail-open");
   renderDetail();
+  renderCompareBar();
   window.scrollTo({ top: 0, behavior: "instant" });
   document.querySelector("#detail-back").focus();
 }
@@ -483,6 +541,10 @@ function populateFilterOptions() {
   populateSelect("location", unique(available.map(({ location }) => location)), "Any location");
   populateSelect("seller", unique(available.map(({ seller }) => seller.name)), "Any seller");
   populateSelect("source", unique(available.map(({ source }) => source.name)), "Any source");
+}
+
+function populateAlertOptions() {
+  document.querySelector("#alert-listing").innerHTML = listings.map((listing) => `<option value="${listing.id}">${escapeHtml(listing.title)}</option>`).join("");
 }
 
 function syncFilterForm() {
@@ -513,59 +575,207 @@ function showToast(message) {
   }, 2200);
 }
 
-function persistInteractions() {
-  if (!persistence) return;
-  persistence.update((state) => ({
-    ...state,
-    alerts: [...alertIds].map((listingId) => ({ id: `phase1c-price-${listingId}`, listingId, type: "price", enabled: true, mock: true })),
-    compare: [...compareIds],
-    preferences: { ...state.preferences, favoriteListingIds: [...savedIds] },
-  }));
+function toggleSaved(id) {
+  const watched = watchedListingIds().has(id);
+  if (watched) {
+    let nextState = appState;
+    appState.watchlists.forEach(({ id: watchlistId }) => {
+      nextState = setWatchlistMembership(nextState, watchlistId, id, false);
+    });
+    saveAppState(nextState);
+    showToast("Removed from all watchlists");
+  } else {
+    let nextState = appState;
+    if (!nextState.watchlists.length) nextState = createWatchlist(nextState, "Saved Deals");
+    nextState = setWatchlistMembership(nextState, nextState.watchlists[0].id, id, true);
+    saveAppState(nextState);
+    showToast(`Added to ${nextState.watchlists[0].name}`);
+  }
+  renderDeals();
+  renderWatchlists();
+  if (selectedListing) renderDetail();
 }
 
-function toggleSaved(id) {
-  if (savedIds.has(id)) {
-    savedIds.delete(id);
-    showToast("Removed from Watchlist preview");
-  } else {
-    savedIds.add(id);
-    showToast("Added locally · full Watchlists arrive in Phase 1D");
+function openWatchlistDialog(listingId) {
+  elements.watchlistForm.reset();
+  elements.watchlistForm.elements.listingId.value = listingId;
+  const memberships = new Set(appState.watchlists.filter(({ listingIds = [] }) => listingIds.includes(listingId)).map(({ id }) => id));
+  document.querySelector("#watchlist-memberships").innerHTML = appState.watchlists.length
+    ? appState.watchlists.map(({ id, name }) => `<label class="membership-option"><input type="checkbox" name="watchlistIds" value="${escapeHtml(id)}" ${memberships.has(id) ? "checked" : ""} /><span>${escapeHtml(name)}</span></label>`).join("")
+    : `<div class="dialog-empty"><strong>No watchlists yet</strong><p>Name one below to create it and add this listing.</p></div>`;
+  elements.watchlistDialog.showModal();
+}
+
+function targetSummary(targets = {}) {
+  const parts = [];
+  if (targets.targetPrice != null && targets.targetPrice !== "") parts.push(`Price ≤ ${formatter.format(Number(targets.targetPrice))}`);
+  if (targets.minimumDealScore != null && targets.minimumDealScore !== "") parts.push(`Score ≥ ${targets.minimumDealScore}`);
+  if (targets.minimumCondition) parts.push(`${targets.minimumCondition}+ condition`);
+  if (targets.minimumBatteryHealth != null && targets.minimumBatteryHealth !== "") parts.push(`Battery ≥ ${targets.minimumBatteryHealth}%`);
+  if (targets.location) parts.push(targets.location);
+  if (targets.categoryRequirement) parts.push(targets.categoryRequirement);
+  return parts.length ? parts.join(" · ") : "No targets set";
+}
+
+function watchlistListingRow(listing, watchlistId, targets) {
+  const match = listingMeetsTargets(listing, targets);
+  return `<article class="saved-listing-row">
+    <button class="saved-listing-main" type="button" data-open-detail="${listing.id}">
+      <span class="similar-visual ${categoryVisual(listing.product.category).className}" aria-hidden="true">${categoryVisual(listing.product.category).icon}</span>
+      <span><strong>${escapeHtml(listing.title)}</strong><small>${formatter.format(listing.currentPrice)} · Score ${listing.deal.score}</small></span>
+    </button>
+    <div class="saved-listing-actions">
+      ${match === null ? "" : `<span class="target-match ${match ? "is-match" : ""}">${match ? "Targets met" : "Outside targets"}</span>`}
+      <button class="text-button" type="button" data-manage-membership="${listing.id}">Move / add</button>
+      <button class="text-button danger-text" type="button" data-remove-from-watchlist="${listing.id}" data-watchlist-id="${watchlistId}">Remove</button>
+    </div>
+  </article>`;
+}
+
+function renderWatchlists() {
+  if (!appState.watchlists.length) {
+    elements.watchlistContent.innerHTML = `<div class="large-empty-state"><span aria-hidden="true">♡</span><h2>No watchlists yet</h2><p>Create a named list, then add deals and target conditions.</p><button class="primary-button" type="button" data-create-watchlist>Create your first watchlist</button></div>`;
+    return;
   }
-  persistInteractions();
+  elements.watchlistContent.innerHTML = `<div class="watchlist-stack">${appState.watchlists.map((watchlist) => {
+    const targets = appState.targetConditions[watchlist.id] ?? {};
+    const items = (watchlist.listingIds ?? []).map((id) => listings.find((listing) => listing.id === id)).filter(Boolean);
+    return `<section class="watchlist-card" data-watchlist-card="${watchlist.id}">
+      <header><div><h2>${escapeHtml(watchlist.name)}</h2><p>${items.length} saved listing${items.length === 1 ? "" : "s"}</p></div><div class="header-actions"><button class="text-button" type="button" data-edit-targets="${watchlist.id}">Edit targets</button><button class="icon-button danger-text" type="button" data-delete-watchlist="${watchlist.id}" aria-label="Delete ${escapeHtml(watchlist.name)}">×</button></div></header>
+      <p class="target-summary"><strong>Targets:</strong> ${escapeHtml(targetSummary(targets))}</p>
+      ${items.length ? `<div class="saved-listings">${items.map((listing) => watchlistListingRow(listing, watchlist.id, targets)).join("")}</div>` : `<div class="inline-empty"><p>No listings in this watchlist.</p><button class="text-button" type="button" data-nav="home">Browse deals</button></div>`}
+    </section>`;
+  }).join("")}</div>`;
+}
+
+function openTargetDialog(watchlistId) {
+  const watchlist = appState.watchlists.find(({ id }) => id === watchlistId);
+  if (!watchlist) return;
+  const targets = appState.targetConditions[watchlistId] ?? {};
+  elements.targetForm.reset();
+  elements.targetForm.elements.watchlistId.value = watchlistId;
+  Object.entries(targets).forEach(([name, value]) => {
+    if (elements.targetForm.elements[name]) elements.targetForm.elements[name].value = value;
+  });
+  document.querySelector("#target-dialog-title").textContent = `${watchlist.name} targets`;
+  elements.targetDialog.showModal();
+}
+
+function alertTypeLabel(type) {
+  return ALERT_TYPES.find(({ value }) => value === type)?.label ?? type;
+}
+
+function alertThreshold(alert) {
+  if (alert.type === "sold-removed") return "Notify on mock status change";
+  if (alert.type === "price") return `Target ${formatter.format(Number(alert.threshold))}`;
+  if (alert.type === "deal-score") return `Target score ${alert.threshold}+`;
+  return `Drop ${alert.threshold}%+`;
+}
+
+function renderAlerts() {
+  if (!appState.alerts.length) {
+    elements.alertsContent.innerHTML = `<div class="large-empty-state"><span aria-hidden="true">♢</span><h2>No alerts yet</h2><p>Create a local mock alert for a listing.</p><button class="primary-button" type="button" data-create-alert>Create an alert</button></div>`;
+    return;
+  }
+  elements.alertsContent.innerHTML = `<div class="alert-list">${appState.alerts.map((alert) => {
+    const listing = listings.find(({ id }) => id === alert.listingId);
+    const evaluation = evaluateAlert(alert, listing);
+    return `<article class="alert-card ${alert.enabled ? "" : "is-disabled"}">
+      <div class="alert-card-heading"><div><span class="alert-kind">${escapeHtml(alertTypeLabel(alert.type))}</span><span class="alert-state ${evaluation.triggered ? "is-triggered" : ""}">${escapeHtml(evaluation.label)}</span></div><label class="switch-row"><input type="checkbox" data-toggle-alert="${alert.id}" ${alert.enabled ? "checked" : ""} /><span>${alert.enabled ? "Enabled" : "Paused"}</span></label></div>
+      <h2>${escapeHtml(listing?.title ?? "Unknown listing")}</h2>
+      <p>${escapeHtml(alertThreshold(alert))}</p>
+      <p class="mock-context">Local mock alert · no background monitoring</p>
+      <div class="card-actions"><button class="text-button" type="button" data-edit-alert="${alert.id}">Edit</button><button class="text-button danger-text" type="button" data-remove-alert="${alert.id}">Remove</button></div>
+    </article>`;
+  }).join("")}</div>`;
+}
+
+function syncAlertThreshold() {
+  const type = elements.alertForm.elements.type.value;
+  const field = document.querySelector("#alert-threshold-field");
+  const input = elements.alertForm.elements.threshold;
+  field.hidden = type === "sold-removed";
+  const labels = { price: "Target price", "deal-score": "Target Deal Score", "price-drop": "Minimum price drop (%)" };
+  field.childNodes[0].textContent = labels[type] ?? "Target value";
+  input.max = type === "deal-score" || type === "price-drop" ? "100" : "";
+  input.step = type === "price" ? "100" : "1";
+  input.required = type !== "sold-removed";
+}
+
+function openAlertDialog(listingId = listings[0].id, alertId = "") {
+  const alert = appState.alerts.find(({ id }) => id === alertId);
+  elements.alertForm.reset();
+  elements.alertForm.elements.alertId.value = alert?.id ?? "";
+  elements.alertForm.elements.listingId.value = alert?.listingId ?? listingId;
+  elements.alertForm.elements.type.value = alert?.type ?? "price";
+  elements.alertForm.elements.threshold.value = alert?.threshold || listings.find(({ id }) => id === listingId)?.currentPrice || "";
+  elements.alertForm.elements.enabled.checked = alert?.enabled ?? true;
+  document.querySelector("#alert-dialog-title").textContent = alert ? "Edit alert" : "Create alert";
+  syncAlertThreshold();
+  elements.alertDialog.showModal();
+}
+
+function toggleCompare(id) {
+  if (!appState.compare.includes(id) && appState.compare.length >= 4) {
+    showToast("Compare supports up to 4 listings");
+    return;
+  }
+  const wasSelected = appState.compare.includes(id);
+  saveAppState(toggleCompareListing(appState, id));
+  showToast(wasSelected ? "Removed from comparison" : "Added to comparison");
+  renderCompareBar();
+  renderCompare();
   renderDeals();
   if (selectedListing) renderDetail();
 }
 
-function toggleAlert(id) {
-  if (alertIds.has(id)) {
-    alertIds.delete(id);
-    showToast("Mock alert removed");
-  } else {
-    alertIds.add(id);
-    showToast("Mock price alert set locally · management arrives in Phase 1D");
-  }
-  persistInteractions();
-  renderDetail();
+function renderCompareBar() {
+  const selected = appState.compare.map((id) => listings.find((listing) => listing.id === id)).filter(Boolean);
+  elements.compareBar.hidden = !selected.length || Boolean(selectedListing) || currentView === "compare";
+  elements.compareCount.textContent = `${selected.length} selected`;
+  elements.compareChips.innerHTML = selected.map((listing) => `<button type="button" data-remove-compare="${listing.id}" aria-label="Remove ${escapeHtml(listing.title)} from compare">${escapeHtml(listing.product.model)} <span aria-hidden="true">×</span></button>`).join("");
+  document.querySelector("#open-compare").disabled = selected.length < 2;
 }
 
-function toggleCompare(id) {
-  if (compareIds.has(id)) {
-    compareIds.delete(id);
-    showToast("Removed from comparison");
-  } else if (compareIds.size >= 4) {
-    showToast("Compare supports up to 4 listings");
+function compareValue(listing, key) {
+  const values = {
+    price: formatter.format(listing.currentPrice),
+    market: formatter.format(listing.marketPrice),
+    fair: formatter.format(listing.fairPrice),
+    deal: `${listing.deal.score}/100`,
+    risk: `${listing.risk.score}/100 · ${listing.risk.level}`,
+    condition: listing.condition,
+    battery: listing.batteryHealth === null ? "N/A" : `${listing.batteryHealth}%`,
+    storage: listing.product.storageGb ? `${listing.product.storageGb} GB` : "N/A",
+    seller: `${listing.seller.name} · ${listing.seller.rating.toFixed(1)}/5`,
+    location: listing.location,
+    age: formatAge(listing.listingAgeDays),
+    warranty: listing.warranty,
+    accessories: listing.accessories.length ? listing.accessories.join(", ") : "None listed",
+  };
+  return values[key];
+}
+
+function renderCompare() {
+  const selected = appState.compare.map((id) => listings.find((listing) => listing.id === id)).filter(Boolean);
+  document.querySelector("#clear-compare-page").hidden = !selected.length;
+  if (selected.length < 2) {
+    elements.compareContent.innerHTML = `<div class="large-empty-state"><span aria-hidden="true">⇄</span><h2>Select ${selected.length ? "one more listing" : "2–4 listings"}</h2><p>Use Compare on deal cards or Product Detail to build a side-by-side view.</p><button class="primary-button" type="button" data-nav="home">Browse deals</button></div>`;
     return;
-  } else {
-    compareIds.add(id);
-    showToast("Added locally · full comparison arrives in Phase 1D");
   }
-  persistInteractions();
-  renderDetail();
+  const recommendation = getCompareRecommendation(selected);
+  const rows = [
+    ["Price", "price"], ["Market price", "market"], ["Fair Price", "fair"], ["Deal Score", "deal"], ["Risk Score", "risk"], ["Condition", "condition"], ["Battery", "battery"], ["Storage", "storage"], ["Seller", "seller"], ["Location", "location"], ["Listing age", "age"], ["Warranty", "warranty"], ["Accessories", "accessories"],
+  ];
+  elements.compareContent.innerHTML = `
+    <section class="compare-recommendation"><p class="eyebrow">Strongest option</p><h2>${escapeHtml(selected.find(({ id }) => id === recommendation.listingId).title)}</h2><p>${escapeHtml(recommendation.explanation)}</p><p class="mock-context">Deterministic mock recommendation.</p></section>
+    <div class="compare-table-wrap" tabindex="0" aria-label="Scrollable listing comparison">
+      <table class="compare-table"><thead><tr><th scope="col">Attribute</th>${selected.map((listing) => `<th scope="col" class="${listing.id === recommendation.listingId ? "recommended-column" : ""}"><button type="button" data-open-detail="${listing.id}">${escapeHtml(listing.product.model)}</button><button class="remove-column" type="button" data-remove-compare="${listing.id}" aria-label="Remove ${escapeHtml(listing.title)}">×</button></th>`).join("")}</tr></thead>
+      <tbody>${rows.map(([label, key]) => `<tr><th scope="row">${label}</th>${selected.map((listing) => `<td class="${listing.id === recommendation.listingId ? "recommended-column" : ""}">${escapeHtml(compareValue(listing, key))}</td>`).join("")}</tr>`).join("")}</tbody></table>
+    </div>`;
 }
 
 const placeholders = {
-  watchlist: { icon: "♡", title: "Watchlist is coming next", copy: "Your saved deals are stored locally. Full watchlists and target conditions belong to Phase 1D." },
-  alerts: { icon: "♢", title: "Alerts are planned for Phase 1D", copy: "Local mock alert creation and management will be implemented in the Tracking checkpoint." },
   settings: { icon: "⚙", title: "Settings are planned for later", copy: "Only settings backed by working local behavior will appear here in a later Phase 1 checkpoint." },
 };
 
@@ -576,23 +786,37 @@ function navigate(view) {
     else button.removeAttribute("aria-current");
   });
 
+  elements.discoveryView.hidden = true;
+  elements.watchlistView.hidden = true;
+  elements.alertsView.hidden = true;
+  elements.compareView.hidden = true;
+  elements.placeholderView.hidden = true;
+  elements.hero.hidden = false;
+
   if (view === "home" || view === "search") {
     elements.discoveryView.hidden = false;
-    elements.placeholderView.hidden = true;
     elements.hero.hidden = view === "search";
     elements.resultsKicker.textContent = view === "search" ? "Search" : "Recommended";
     elements.dealsTitle.textContent = view === "search" ? "Search results" : "Best Deals";
     if (view === "search") elements.search.focus();
-    return;
+  } else if (view === "watchlist") {
+    elements.watchlistView.hidden = false;
+    renderWatchlists();
+  } else if (view === "alerts") {
+    elements.alertsView.hidden = false;
+    renderAlerts();
+  } else if (view === "compare") {
+    elements.compareView.hidden = false;
+    renderCompare();
+  } else {
+    const placeholder = placeholders[view];
+    elements.placeholderView.hidden = false;
+    elements.placeholderIcon.textContent = placeholder.icon;
+    elements.placeholderTitle.textContent = placeholder.title;
+    elements.placeholderCopy.textContent = placeholder.copy;
   }
-
-  const placeholder = placeholders[view];
-  elements.discoveryView.hidden = true;
-  elements.placeholderView.hidden = false;
-  elements.hero.hidden = false;
-  elements.placeholderIcon.textContent = placeholder.icon;
-  elements.placeholderTitle.textContent = placeholder.title;
-  elements.placeholderCopy.textContent = placeholder.copy;
+  renderCompareBar();
+  window.scrollTo({ top: 0, behavior: "instant" });
 }
 
 elements.search.addEventListener("input", (event) => {
@@ -629,7 +853,9 @@ elements.activeFilters.addEventListener("click", (event) => {
 elements.grid.addEventListener("click", (event) => {
   const saveButton = event.target.closest("[data-save]");
   const detailButton = event.target.closest("[data-open-detail]");
+  const compareButton = event.target.closest("[data-card-compare]");
   if (saveButton) toggleSaved(saveButton.dataset.save);
+  else if (compareButton) toggleCompare(compareButton.dataset.cardCompare);
   else if (detailButton) openDetail(detailButton.dataset.openDetail);
 });
 
@@ -647,9 +873,9 @@ elements.detailContent.addEventListener("click", (event) => {
     historyRange = range.dataset.historyRange;
     renderDetail();
   } else if (action?.dataset.detailAction === "watch") {
-    toggleSaved(selectedListing.id);
+    openWatchlistDialog(selectedListing.id);
   } else if (action?.dataset.detailAction === "alert") {
-    toggleAlert(selectedListing.id);
+    openAlertDialog(selectedListing.id, appState.alerts.find(({ listingId }) => listingId === selectedListing.id)?.id);
   } else if (action?.dataset.detailAction === "compare") {
     toggleCompare(selectedListing.id);
   } else if (related) {
@@ -670,6 +896,145 @@ elements.detailContent.addEventListener("focusin", (event) => {
 
 document.querySelector("#detail-back").addEventListener("click", closeDetail);
 document.querySelector("#detail-close").addEventListener("click", closeDetail);
+
+document.querySelector("#new-watchlist").addEventListener("click", () => openWatchlistDialog(""));
+document.querySelector("#new-alert").addEventListener("click", () => openAlertDialog());
+
+elements.watchlistForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const listingId = elements.watchlistForm.elements.listingId.value;
+  const selectedWatchlists = new Set(new FormData(elements.watchlistForm).getAll("watchlistIds"));
+  const newName = elements.watchlistForm.elements.newWatchlistName.value.trim();
+  let nextState = appState;
+  if (newName) {
+    nextState = createWatchlist(nextState, newName);
+    if (listingId) selectedWatchlists.add(nextState.watchlists.at(-1).id);
+  }
+  if (listingId) {
+    nextState.watchlists.forEach(({ id }) => {
+      nextState = setWatchlistMembership(nextState, id, listingId, selectedWatchlists.has(id));
+    });
+  }
+  saveAppState(nextState);
+  elements.watchlistDialog.close();
+  renderWatchlists();
+  renderDeals();
+  if (selectedListing) renderDetail();
+  showToast(newName ? "Watchlist created and saved locally" : "Watchlist memberships updated");
+});
+
+elements.watchlistContent.addEventListener("click", (event) => {
+  const create = event.target.closest("[data-create-watchlist]");
+  const targets = event.target.closest("[data-edit-targets]");
+  const remove = event.target.closest("[data-remove-from-watchlist]");
+  const manage = event.target.closest("[data-manage-membership]");
+  const removeList = event.target.closest("[data-delete-watchlist]");
+  const detail = event.target.closest("[data-open-detail]");
+  if (create) openWatchlistDialog("");
+  else if (targets) openTargetDialog(targets.dataset.editTargets);
+  else if (manage) openWatchlistDialog(manage.dataset.manageMembership);
+  else if (remove) {
+    saveAppState(setWatchlistMembership(appState, remove.dataset.watchlistId, remove.dataset.removeFromWatchlist, false));
+    renderWatchlists();
+    renderDeals();
+    showToast("Listing removed from watchlist");
+  } else if (removeList) {
+    saveAppState(deleteWatchlist(appState, removeList.dataset.deleteWatchlist));
+    renderWatchlists();
+    renderDeals();
+    showToast("Watchlist removed locally");
+  } else if (detail) openDetail(detail.dataset.openDetail);
+});
+
+elements.targetForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const values = Object.fromEntries(new FormData(elements.targetForm));
+  const watchlistId = values.watchlistId;
+  delete values.watchlistId;
+  saveAppState(updateTargetConditions(appState, watchlistId, values));
+  elements.targetDialog.close();
+  renderWatchlists();
+  showToast("Target conditions saved locally");
+});
+
+elements.alertForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const values = Object.fromEntries(new FormData(elements.alertForm));
+  saveAppState(upsertAlert(appState, {
+    id: values.alertId,
+    listingId: values.listingId,
+    type: values.type,
+    threshold: values.threshold,
+    enabled: elements.alertForm.elements.enabled.checked,
+  }));
+  elements.alertDialog.close();
+  renderAlerts();
+  if (selectedListing) renderDetail();
+  showToast(values.alertId ? "Mock alert updated" : "Mock alert created locally");
+});
+
+elements.alertForm.elements.type.addEventListener("change", syncAlertThreshold);
+
+elements.alertsContent.addEventListener("click", (event) => {
+  const edit = event.target.closest("[data-edit-alert]");
+  const remove = event.target.closest("[data-remove-alert]");
+  const toggle = event.target.closest("[data-toggle-alert]");
+  const create = event.target.closest("[data-create-alert]");
+  if (create) openAlertDialog();
+  else if (edit) openAlertDialog(undefined, edit.dataset.editAlert);
+  else if (remove) {
+    saveAppState(removeAlert(appState, remove.dataset.removeAlert));
+    renderAlerts();
+    showToast("Mock alert removed");
+  } else if (toggle) {
+    saveAppState(toggleAlertEnabled(appState, toggle.dataset.toggleAlert));
+    renderAlerts();
+  }
+});
+
+elements.compareBar.addEventListener("click", (event) => {
+  const remove = event.target.closest("[data-remove-compare]");
+  if (remove) {
+    saveAppState(removeCompareListing(appState, remove.dataset.removeCompare));
+    renderCompareBar();
+    renderDeals();
+  }
+});
+
+document.querySelector("#clear-compare").addEventListener("click", () => {
+  saveAppState(clearCompare(appState));
+  renderCompareBar();
+  renderDeals();
+  showToast("Comparison cleared");
+});
+
+document.querySelector("#open-compare").addEventListener("click", () => navigate("compare"));
+document.querySelector("#clear-compare-page").addEventListener("click", () => {
+  saveAppState(clearCompare(appState));
+  renderCompare();
+  renderCompareBar();
+  renderDeals();
+});
+
+elements.compareContent.addEventListener("click", (event) => {
+  const remove = event.target.closest("[data-remove-compare]");
+  const detail = event.target.closest("[data-open-detail]");
+  if (remove) {
+    saveAppState(removeCompareListing(appState, remove.dataset.removeCompare));
+    renderCompare();
+    renderDeals();
+  } else if (detail) openDetail(detail.dataset.openDetail);
+});
+
+document.querySelectorAll("[data-close-dialog]").forEach((button) => {
+  button.addEventListener("click", () => document.querySelector(`#${button.dataset.closeDialog}`).close());
+});
+
+[elements.watchlistDialog, elements.targetDialog, elements.alertDialog].forEach((dialog) => {
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) dialog.close();
+  });
+});
 
 document.querySelector("#filter-trigger").addEventListener("click", () => {
   syncFilterForm();
@@ -704,10 +1069,14 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && selectedListing && !elements.filterDialog.open) closeDetail();
+  if (event.key === "Escape" && selectedListing && !document.querySelector("dialog[open]")) closeDetail();
 });
 
 populateFilterOptions();
+populateAlertOptions();
 renderDeals();
+renderWatchlists();
+renderAlerts();
+renderCompare();
 navigate(currentView);
 document.documentElement.dataset.appReady = "true";

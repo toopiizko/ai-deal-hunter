@@ -16,6 +16,20 @@ import {
   getSimilarListings,
   HISTORY_RANGES,
 } from "../src/domain/product-detail.js";
+import {
+  clearCompare,
+  createWatchlist,
+  evaluateAlert,
+  getCompareRecommendation,
+  listingMeetsTargets,
+  removeAlert,
+  removeCompareListing,
+  setWatchlistMembership,
+  toggleAlertEnabled,
+  toggleCompareListing,
+  updateTargetConditions,
+  upsertAlert,
+} from "../src/domain/tracking.js";
 import { calculateRiskScore, getRiskLevel } from "../src/domain/risk-score.js";
 import { createMemoryStorage, createPersistence, STORAGE_KEY } from "../src/storage/local-store.js";
 
@@ -117,6 +131,29 @@ assert("Deal Score exposes all documented factor labels", Object.values(DEAL_FAC
 assert("similar products share the selected category", getSimilarListings(detailListing, discoveryListings).every(({ id, product }) => id !== detailListing.id && product.category === detailListing.product.category));
 const suspiciousAnalysis = buildMockAnalysis(discoveryListings.find(({ id }) => id === "listing-iphone-17-pro-suspicious"));
 assert("mock analysis lets high risk override an attractive price", suspiciousAnalysis.action === "SKIP");
+
+let trackingState = { watchlists: [], targetConditions: {}, alerts: [], compare: [] };
+trackingState = createWatchlist(trackingState, "Phones");
+trackingState = createWatchlist(trackingState, "Best scores");
+trackingState = setWatchlistMembership(trackingState, trackingState.watchlists[0].id, discoveryListings[0].id, true);
+assert("multiple named watchlists can be created", trackingState.watchlists.length === 2);
+assert("listings can be added to a watchlist", trackingState.watchlists[0].listingIds.includes(discoveryListings[0].id));
+trackingState = updateTargetConditions(trackingState, trackingState.watchlists[0].id, { targetPrice: "21000", minimumDealScore: "80", minimumCondition: "Good", minimumBatteryHealth: "90", location: "Bangkok", categoryRequirement: "256GB" });
+assert("watchlist target conditions evaluate matching listings", listingMeetsTargets(discoveryListings[0], trackingState.targetConditions[trackingState.watchlists[0].id]) === true);
+for (const type of ["price", "deal-score", "sold-removed", "price-drop"]) trackingState = upsertAlert(trackingState, { listingId: discoveryListings[0].id, type, threshold: "10", enabled: true });
+assert("all four local alert types can be created", trackingState.alerts.length === 4);
+assert("local alert conditions evaluate deterministically", evaluateAlert(trackingState.alerts[1], discoveryListings[0]).triggered === true);
+trackingState = toggleAlertEnabled(trackingState, trackingState.alerts[0].id);
+assert("alerts can be enabled or disabled", trackingState.alerts[0].enabled === false);
+trackingState = removeAlert(trackingState, trackingState.alerts[0].id);
+assert("alerts can be removed", trackingState.alerts.length === 3);
+discoveryListings.slice(0, 5).forEach(({ id }) => { trackingState = toggleCompareListing(trackingState, id); });
+assert("compare selection is limited to four listings", trackingState.compare.length === 4);
+const comparedListings = trackingState.compare.map((id) => discoveryListings.find((listing) => listing.id === id));
+assert("compare recommendation selects one of the compared listings", trackingState.compare.includes(getCompareRecommendation(comparedListings).listingId));
+trackingState = removeCompareListing(trackingState, trackingState.compare[0]);
+assert("compare selection supports removal", trackingState.compare.length === 3);
+assert("compare selection supports clearing", clearCompare(trackingState).compare.length === 0);
 
 const list = document.querySelector("#results");
 for (const result of results) {

@@ -2,7 +2,7 @@
 
 ## Project state
 
-The repository contains the approved project documentation and a dependency-free static client-side implementation. Phase 1A established the mock catalog, Deal/Risk scoring, Price History data, persistence, tests, and runnable shell. Phase 1B adds Home/Discover, search, filters, sorting, deal cards, and mobile navigation. Phase 1C adds the local Product Detail experience, interactive mock Price History, explainable Deal/Risk analysis, seller information, related listings, and temporary persisted product actions. Later Phase 1 checkpoints remain incomplete until explicitly implemented and verified.
+The repository contains the approved project documentation and a dependency-free static client-side implementation. Phase 1A established the mock catalog, Deal/Risk scoring, Price History data, persistence, tests, and runnable shell. Phase 1B adds Home/Discover, search, filters, sorting, deal cards, and mobile navigation. Phase 1C adds Product Detail, interactive mock Price History, explainable Deal/Risk analysis, seller information, and related listings. Phase 1D adds local named watchlists and targets, local mock alert management, and 2–4 listing comparison. Later Phase 1 checkpoints remain incomplete until explicitly implemented and verified.
 
 ## Source of truth
 

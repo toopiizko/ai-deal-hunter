@@ -88,6 +88,32 @@
           </section>
         </section>
 
+        <section class="tracking-view" id="watchlist-view" hidden aria-labelledby="watchlists-title">
+          <header class="page-heading">
+            <div><p class="eyebrow">Saved locally</p><h1 id="watchlists-title">Watchlists</h1></div>
+            <button class="primary-button compact-button" id="new-watchlist" type="button">New watchlist</button>
+          </header>
+          <p class="page-intro">Organize listings and set targets for this local prototype.</p>
+          <div id="watchlist-content"></div>
+        </section>
+
+        <section class="tracking-view" id="alerts-view" hidden aria-labelledby="alerts-title">
+          <header class="page-heading">
+            <div><p class="eyebrow">Local prototype</p><h1 id="alerts-title">Alerts</h1></div>
+            <button class="primary-button compact-button" id="new-alert" type="button">New alert</button>
+          </header>
+          <p class="mock-disclosure">Mock alerts are checked only while using this prototype. There is no background monitoring or push delivery.</p>
+          <div id="alerts-content"></div>
+        </section>
+
+        <section class="tracking-view compare-view" id="compare-view" hidden aria-labelledby="compare-title">
+          <header class="page-heading">
+            <div><p class="eyebrow">2–4 listings</p><h1 id="compare-title">Compare</h1></div>
+            <button class="text-button" id="clear-compare-page" type="button">Clear</button>
+          </header>
+          <div id="compare-content"></div>
+        </section>
+
         <section class="placeholder-view" id="placeholder-view" hidden aria-live="polite">
           <span class="placeholder-icon" id="placeholder-icon" aria-hidden="true">◇</span>
           <p class="eyebrow">Later Phase 1 checkpoint</p>
@@ -157,6 +183,60 @@
         </footer>
       </form>
     </dialog>
+
+    <dialog class="workflow-dialog" id="watchlist-dialog" aria-labelledby="watchlist-dialog-title">
+      <form id="watchlist-form">
+        <header class="filter-header">
+          <div><p class="eyebrow">Saved locally</p><h2 id="watchlist-dialog-title">Choose watchlists</h2></div>
+          <button class="icon-button" type="button" data-close-dialog="watchlist-dialog" aria-label="Close watchlist dialog">×</button>
+        </header>
+        <input type="hidden" name="listingId" />
+        <div class="membership-list" id="watchlist-memberships"></div>
+        <label>New watchlist name<input name="newWatchlistName" maxlength="40" placeholder="e.g. iPhone shortlist" /></label>
+        <footer class="filter-actions"><button class="primary-button" type="submit">Save watchlists</button></footer>
+      </form>
+    </dialog>
+
+    <dialog class="workflow-dialog" id="target-dialog" aria-labelledby="target-dialog-title">
+      <form id="target-form">
+        <header class="filter-header">
+          <div><p class="eyebrow">Match preferences</p><h2 id="target-dialog-title">Target conditions</h2></div>
+          <button class="icon-button" type="button" data-close-dialog="target-dialog" aria-label="Close target conditions">×</button>
+        </header>
+        <input type="hidden" name="watchlistId" />
+        <div class="filter-fields">
+          <label>Target price<input name="targetPrice" type="number" min="0" step="100" placeholder="Any price" /></label>
+          <label>Target Deal Score<input name="minimumDealScore" type="number" min="0" max="100" step="1" placeholder="Any score" /></label>
+          <label>Minimum condition<select name="minimumCondition"><option value="">Any condition</option><option>Fair</option><option>Good</option><option>Very good</option><option>Excellent</option></select></label>
+          <label>Minimum battery health<input name="minimumBatteryHealth" type="number" min="0" max="100" step="1" placeholder="When applicable" /></label>
+          <label>Location<input name="location" placeholder="Any location" /></label>
+          <label>Category requirement<input name="categoryRequirement" placeholder="e.g. 256GB, receipt, charger" /></label>
+        </div>
+        <footer class="filter-actions"><button class="primary-button" type="submit">Save targets</button></footer>
+      </form>
+    </dialog>
+
+    <dialog class="workflow-dialog" id="alert-dialog" aria-labelledby="alert-dialog-title">
+      <form id="alert-form">
+        <header class="filter-header">
+          <div><p class="eyebrow">Local mock behavior</p><h2 id="alert-dialog-title">Create alert</h2></div>
+          <button class="icon-button" type="button" data-close-dialog="alert-dialog" aria-label="Close alert dialog">×</button>
+        </header>
+        <input type="hidden" name="alertId" />
+        <div class="filter-fields">
+          <label>Listing<select name="listingId" id="alert-listing"></select></label>
+          <label>Alert type<select name="type" id="alert-type"><option value="price">Price Alert</option><option value="deal-score">Deal Score Alert</option><option value="sold-removed">Sold / Removed Alert</option><option value="price-drop">Price Drop Alert</option></select></label>
+          <label id="alert-threshold-field">Target value<input name="threshold" type="number" min="0" step="1" /></label>
+          <label class="check-row"><input name="enabled" type="checkbox" checked /> Enabled</label>
+        </div>
+        <footer class="filter-actions"><button class="primary-button" type="submit">Save alert</button></footer>
+      </form>
+    </dialog>
+
+    <div class="compare-bar" id="compare-bar" hidden aria-live="polite">
+      <div><strong id="compare-count">0 selected</strong><div class="compare-chips" id="compare-chips"></div></div>
+      <div class="compare-bar-actions"><button class="text-button" id="clear-compare" type="button">Clear</button><button class="primary-button compact-button" id="open-compare" type="button">Compare</button></div>
+    </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 

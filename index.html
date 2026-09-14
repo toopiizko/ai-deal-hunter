@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-title" content="Deal Hunter" />
     <title>AI Deal Hunter</title>
     <link rel="manifest" href="./manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="./icons/app-icon.svg" />
+    <link rel="apple-touch-icon" sizes="192x192" href="./icons/app-icon-192.png" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%238b7cf6'/%3E%3Cpath d='M19 32 32 19l13 13-13 13Z' fill='none' stroke='white' stroke-width='4'/%3E%3C/svg%3E" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
@@ -125,12 +125,12 @@
           <div id="compare-content"></div>
         </section>
 
-        <section class="placeholder-view" id="placeholder-view" hidden aria-live="polite">
-          <span class="placeholder-icon" id="placeholder-icon" aria-hidden="true">◇</span>
-          <p class="eyebrow">Later Phase 1 checkpoint</p>
-          <h1 id="placeholder-title">Coming soon</h1>
-          <p id="placeholder-copy">This area is intentionally reserved for a later approved phase.</p>
-          <button class="primary-button" type="button" data-nav="home">Back to Discover</button>
+        <section class="tracking-view settings-view" id="settings-view" hidden aria-labelledby="settings-title">
+          <header class="page-heading">
+            <div><p class="eyebrow">Local preferences</p><h1 id="settings-title">Settings</h1></div>
+          </header>
+          <p class="page-intro">Manage this browser’s prototype preferences and locally saved data.</p>
+          <div class="settings-stack" id="settings-content"></div>
         </section>
 
         <section class="detail-view" id="detail-view" hidden aria-labelledby="detail-title">
@@ -241,6 +241,20 @@
           <label class="check-row"><input name="enabled" type="checkbox" checked /> Enabled</label>
         </div>
         <footer class="filter-actions"><button class="primary-button" type="submit">Save alert</button></footer>
+      </form>
+    </dialog>
+
+    <dialog class="workflow-dialog" id="reset-dialog" aria-labelledby="reset-dialog-title">
+      <form id="reset-form" method="dialog">
+        <header class="filter-header">
+          <div><p class="eyebrow">Data &amp; storage</p><h2 id="reset-dialog-title">Reset local prototype data?</h2></div>
+          <button class="icon-button" type="button" data-close-dialog="reset-dialog" aria-label="Close reset dialog">×</button>
+        </header>
+        <p class="reset-copy" id="reset-summary">This removes saved watchlists, targets, alerts, compare selections, and preferences from this browser.</p>
+        <footer class="filter-actions">
+          <button class="text-button" type="button" data-close-dialog="reset-dialog">Cancel</button>
+          <button class="danger-button" id="confirm-reset" type="submit" value="confirm">Reset local data</button>
+        </footer>
       </form>
     </dialog>
 

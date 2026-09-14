@@ -2,7 +2,7 @@
 
 ## Current verified state
 
-The repository has a dependency-free static client-side application built with HTML, CSS, and JavaScript modules. It includes a mock catalog, deterministic Deal/Risk scoring, mock Price History data, versioned local persistence, Discovery, Product Detail, tracking, and comparison flows. Phase 1E adds a Web App Manifest, local scalable icons, service-worker registration, a versioned application-shell cache, old-cache cleanup, network-first online updates, cached offline fallbacks, and visible connection state. Browser and Node test files cover domain behavior, and a browser PWA runner verifies installation and cache lifecycle. There is no backend or framework.
+The repository has a dependency-free static client-side application built with HTML, CSS, and JavaScript modules. It includes a mock catalog, deterministic Deal/Risk scoring, mock Price History data, versioned local persistence, Discovery, Product Detail, tracking, comparison, and functional local Settings. The PWA includes a Web App Manifest, standard PNG and scalable icon assets, service-worker registration, a versioned application-shell cache, old-cache cleanup, network-first online updates, cached offline fallbacks, and visible connection state. Browser and Node test files cover domain behavior, and a browser PWA runner verifies installation and cache lifecycle. There is no backend or framework.
 
 ## Intended Phase 1 architecture
 

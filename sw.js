@@ -1,11 +1,14 @@
 const CACHE_PREFIX = "ai-deal-hunter-shell-";
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v2";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./manifest.webmanifest",
+  "./icons/app-icon-192.png",
+  "./icons/app-icon-512.png",
+  "./icons/app-icon-maskable-512.png",
   "./icons/app-icon.svg",
   "./icons/app-icon-maskable.svg",
   "./src/app.js",

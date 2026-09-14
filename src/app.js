@@ -68,13 +68,12 @@ const elements = {
   filterForm: document.querySelector("#filter-form"),
   grid: document.querySelector("#deal-grid"),
   hero: document.querySelector("#home-hero"),
-  placeholderCopy: document.querySelector("#placeholder-copy"),
-  placeholderIcon: document.querySelector("#placeholder-icon"),
-  placeholderTitle: document.querySelector("#placeholder-title"),
-  placeholderView: document.querySelector("#placeholder-view"),
+  resetDialog: document.querySelector("#reset-dialog"),
   resultCount: document.querySelector("#result-count"),
   resultsKicker: document.querySelector("#results-kicker"),
   search: document.querySelector("#search-input"),
+  settingsContent: document.querySelector("#settings-content"),
+  settingsView: document.querySelector("#settings-view"),
   sort: document.querySelector("#sort-select"),
   targetDialog: document.querySelector("#target-dialog"),
   targetForm: document.querySelector("#target-form"),
@@ -129,6 +128,11 @@ if (legacyFavorites.length && !appState.watchlists.some(({ listingIds = [] }) =>
 function saveAppState(nextState) {
   appState = persistence ? persistence.save(nextState) : nextState;
   return appState;
+}
+
+function applyPreferences() {
+  const layout = appState.preferences.layout === "comfortable" ? "comfortable" : "compact";
+  document.body.dataset.layout = layout;
 }
 
 function watchedListingIds() {
@@ -513,7 +517,7 @@ function openDetail(id) {
   elements.appHeader.hidden = true;
   elements.bottomNav.hidden = true;
   elements.discoveryView.hidden = true;
-  elements.placeholderView.hidden = true;
+  elements.settingsView.hidden = true;
   elements.detailView.hidden = false;
   document.body.classList.add("detail-open");
   renderDetail();
@@ -703,6 +707,42 @@ function renderAlerts() {
   }).join("")}</div>`;
 }
 
+function localDataCounts() {
+  return {
+    alerts: appState.alerts.length,
+    compare: appState.compare.length,
+    saved: watchedListingIds().size,
+    watchlists: appState.watchlists.length,
+  };
+}
+
+function renderSettings() {
+  const counts = localDataCounts();
+  const layout = appState.preferences.layout === "comfortable" ? "comfortable" : "compact";
+  const hasEnabledAlerts = appState.alerts.some(({ enabled }) => enabled);
+  elements.settingsContent.innerHTML = `
+    <section class="settings-card" aria-labelledby="appearance-settings-title">
+      <div class="settings-card-heading"><span class="settings-icon" aria-hidden="true">▦</span><div><h2 id="appearance-settings-title">Appearance</h2><p>Choose the listing density on phones.</p></div></div>
+      <fieldset class="segmented-setting"><legend>Listing layout</legend>
+        <label><input type="radio" name="listing-layout" value="compact" ${layout === "compact" ? "checked" : ""} /><span>Compact · 2 columns</span></label>
+        <label><input type="radio" name="listing-layout" value="comfortable" ${layout === "comfortable" ? "checked" : ""} /><span>Comfortable · 1 column</span></label>
+      </fieldset>
+    </section>
+    <section class="settings-card" aria-labelledby="alert-settings-title">
+      <div class="settings-card-heading"><span class="settings-icon settings-icon-warning" aria-hidden="true">♢</span><div><h2 id="alert-settings-title">Alert preferences</h2><p>Local mock alerts run only while this app is open.</p></div></div>
+      <div class="settings-action-row"><span><strong>${counts.alerts} configured</strong><small>${hasEnabledAlerts ? "At least one alert is enabled" : "All alerts are paused"}</small></span><button class="secondary-button compact-button" type="button" data-toggle-all-alerts ${counts.alerts ? "" : "disabled"}>${hasEnabledAlerts ? "Pause all" : "Resume all"}</button></div>
+    </section>
+    <section class="settings-card" aria-labelledby="storage-settings-title">
+      <div class="settings-card-heading"><span class="settings-icon settings-icon-mint" aria-hidden="true">▤</span><div><h2 id="storage-settings-title">Data &amp; storage</h2><p>Saved in this browser using local storage.</p></div></div>
+      <dl class="storage-stats"><div><dt>Watchlists</dt><dd>${counts.watchlists}</dd></div><div><dt>Saved listings</dt><dd>${counts.saved}</dd></div><div><dt>Alerts</dt><dd>${counts.alerts}</dd></div><div><dt>Compare</dt><dd>${counts.compare}</dd></div></dl>
+      <button class="danger-outline-button" type="button" data-open-reset>Reset local prototype data</button>
+    </section>
+    <section class="settings-card" aria-labelledby="about-settings-title">
+      <div class="settings-card-heading"><span class="settings-icon settings-icon-pink" aria-hidden="true">◇</span><div><h2 id="about-settings-title">About AI Deal Hunter</h2><p>Phase 1 functional prototype</p></div></div>
+      <p class="about-copy"><strong>Mock data only.</strong> Listings, historical prices, Deal and Risk analysis, AI recommendations, sellers, and alerts are local prototype data. There is no real marketplace monitoring, seller verification, AI service, or push delivery.</p>
+    </section>`;
+}
+
 function syncAlertThreshold() {
   const type = elements.alertForm.elements.type.value;
   const field = document.querySelector("#alert-threshold-field");
@@ -788,10 +828,6 @@ function renderCompare() {
     </div>`;
 }
 
-const placeholders = {
-  settings: { icon: "⚙", title: "Settings are planned for later", copy: "Only settings backed by working local behavior will appear here in a later Phase 1 checkpoint." },
-};
-
 function navigate(view) {
   currentView = view;
   document.querySelectorAll(".bottom-nav [data-nav]").forEach((button) => {
@@ -803,7 +839,7 @@ function navigate(view) {
   elements.watchlistView.hidden = true;
   elements.alertsView.hidden = true;
   elements.compareView.hidden = true;
-  elements.placeholderView.hidden = true;
+  elements.settingsView.hidden = true;
   elements.hero.hidden = false;
 
   if (view === "home" || view === "search") {
@@ -821,12 +857,9 @@ function navigate(view) {
   } else if (view === "compare") {
     elements.compareView.hidden = false;
     renderCompare();
-  } else {
-    const placeholder = placeholders[view];
-    elements.placeholderView.hidden = false;
-    elements.placeholderIcon.textContent = placeholder.icon;
-    elements.placeholderTitle.textContent = placeholder.title;
-    elements.placeholderCopy.textContent = placeholder.copy;
+  } else if (view === "settings") {
+    elements.settingsView.hidden = false;
+    renderSettings();
   }
   renderCompareBar();
   window.scrollTo({ top: 0, behavior: "instant" });
@@ -1009,6 +1042,44 @@ elements.alertsContent.addEventListener("click", (event) => {
   }
 });
 
+elements.settingsContent.addEventListener("change", (event) => {
+  const layout = event.target.closest('[name="listing-layout"]');
+  if (!layout) return;
+  saveAppState({ ...appState, preferences: { ...appState.preferences, layout: layout.value } });
+  applyPreferences();
+  showToast(`${layout.value === "compact" ? "Compact" : "Comfortable"} listing layout saved`);
+});
+
+elements.settingsContent.addEventListener("click", (event) => {
+  const alertsToggle = event.target.closest("[data-toggle-all-alerts]");
+  const reset = event.target.closest("[data-open-reset]");
+  if (alertsToggle) {
+    const enable = !appState.alerts.some(({ enabled }) => enabled);
+    saveAppState({ ...appState, alerts: appState.alerts.map((alert) => ({ ...alert, enabled: enable })) });
+    renderAlerts();
+    renderSettings();
+    showToast(enable ? "All local alerts resumed" : "All local alerts paused");
+  } else if (reset) {
+    const counts = localDataCounts();
+    document.querySelector("#reset-summary").textContent = `Remove ${counts.watchlists} watchlist${counts.watchlists === 1 ? "" : "s"}, ${counts.saved} saved listing${counts.saved === 1 ? "" : "s"}, ${counts.alerts} alert${counts.alerts === 1 ? "" : "s"}, compare selections, and preferences from this browser.`;
+    elements.resetDialog.showModal();
+  }
+});
+
+document.querySelector("#reset-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  appState = persistence?.reset() ?? { schemaVersion: 1, watchlists: [], targetConditions: {}, alerts: [], compare: [], preferences: { appearance: "system", layout: "compact" } };
+  applyPreferences();
+  elements.resetDialog.close();
+  renderDeals();
+  renderWatchlists();
+  renderAlerts();
+  renderCompare();
+  renderCompareBar();
+  renderSettings();
+  showToast("Local prototype data reset");
+});
+
 elements.compareBar.addEventListener("click", (event) => {
   const remove = event.target.closest("[data-remove-compare]");
   if (remove) {
@@ -1047,7 +1118,7 @@ document.querySelectorAll("[data-close-dialog]").forEach((button) => {
   button.addEventListener("click", () => document.querySelector(`#${button.dataset.closeDialog}`).close());
 });
 
-[elements.watchlistDialog, elements.targetDialog, elements.alertDialog].forEach((dialog) => {
+[elements.watchlistDialog, elements.targetDialog, elements.alertDialog, elements.resetDialog].forEach((dialog) => {
   dialog.addEventListener("click", (event) => {
     if (event.target === dialog) dialog.close();
   });
@@ -1091,6 +1162,7 @@ document.addEventListener("keydown", (event) => {
 
 populateFilterOptions();
 populateAlertOptions();
+applyPreferences();
 renderDeals();
 renderWatchlists();
 renderAlerts();

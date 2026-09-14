@@ -2,7 +2,7 @@
 
 ## Project state
 
-The repository contains the approved project documentation and a dependency-free static client-side implementation. Phase 1A established the mock catalog, Deal/Risk scoring, Price History data, persistence, tests, and runnable shell. Phase 1B adds Home/Discover, search, filters, sorting, deal cards, and mobile navigation. Phase 1C adds Product Detail, interactive mock Price History, explainable Deal/Risk analysis, seller information, and related listings. Phase 1D adds local named watchlists and targets, local mock alert management, and 2–4 listing comparison. Phase 1E adds the manifest, local icons, versioned service worker, offline shell, and connection state. Later Phase 1 checkpoints remain incomplete until explicitly implemented and verified.
+The repository contains the approved project documentation and a dependency-free static client-side implementation. Phase 1A established the mock catalog, Deal/Risk scoring, Price History data, persistence, tests, and runnable shell. Phase 1B adds Home/Discover, search, filters, sorting, deal cards, and mobile navigation. Phase 1C adds Product Detail, interactive mock Price History, explainable Deal/Risk analysis, seller information, and related listings. Phase 1D adds local named watchlists and targets, local mock alert management, and 2–4 listing comparison. Phase 1E adds the manifest, local icons, versioned service worker, offline shell, and connection state. Phase 1F Settings, installability assets, QA, and the compliance audit are present in the local working tree and remain uncommitted until approval.
 
 ## Source of truth
 

@@ -28,15 +28,17 @@ try {
   assert("service worker script loads", workerResponse.ok);
   assert("service worker uses a versioned cache", workerSource.includes("CACHE_VERSION") && workerSource.includes("CACHE_PREFIX"));
 
+  const existingRegistrations = await navigator.serviceWorker.getRegistrations();
+  await Promise.all(existingRegistrations.map((existing) => existing.unregister()));
   await caches.open("ai-deal-hunter-shell-old-test");
-  const registration = await navigator.serviceWorker.register("../sw.js", { scope: "../", updateViaCache: "none" });
+  const registration = await navigator.serviceWorker.register(`../sw.js?activation-test=${Date.now()}`, { scope: "../", updateViaCache: "none" });
   await navigator.serviceWorker.ready;
   const controlled = await waitFor(() => Boolean(navigator.serviceWorker.controller || registration.active));
   assert("service worker registers and activates", controlled);
   const oldCacheRemoved = await waitFor(async () => !(await caches.keys()).includes("ai-deal-hunter-shell-old-test"));
   assert("activation removes obsolete versioned caches", oldCacheRemoved);
   const cacheNames = await caches.keys();
-  const currentName = cacheNames.find((name) => name === "ai-deal-hunter-shell-v1");
+  const currentName = cacheNames.find((name) => name === "ai-deal-hunter-shell-v2");
   const cachedRequests = currentName ? await (await caches.open(currentName)).keys() : [];
   const cachedPaths = cachedRequests.map(({ url }) => new URL(url).pathname);
   assert("application shell is pre-cached", ["/", "/index.html", "/styles.css", "/src/app.js", "/manifest.webmanifest"].every((path) => cachedPaths.includes(path)));

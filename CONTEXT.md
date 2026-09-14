@@ -15,4 +15,4 @@ Important constraints:
 - The iPhone/used-device scenario is the primary showcase, with enough varied mock listings to exercise other categories and states.
 - Mock historical values and mock analysis must be clearly labeled; external listing actions are unavailable offline.
 
-Current rebuild status: documentation and Phase 1A–1D are committed on branch `phase1-rebuild`. Phase 1E PWA installation, caching, and offline behavior are implemented locally and awaiting checkpoint approval. Final settings polish and acceptance work remain assigned to the next Phase 1 checkpoint.
+Current rebuild status: documentation and Phase 1A–1E are committed on branch `phase1-rebuild`. Phase 1F adds functional local Settings, standard PNG install icons, final mobile/offline/static QA, and a requirement checklist in the uncommitted working tree. A branch push and Netlify Deploy Preview remain pending explicit approval.

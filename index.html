@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#8b7cf6" />
+    <meta name="description" content="Find and evaluate second-hand deals with explainable mock Deal and Risk Scores." />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Deal Hunter" />
+    <title>AI Deal Hunter</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" sizes="192x192" href="./icons/app-icon-192.png" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%238b7cf6'/%3E%3Cpath d='M19 32 32 19l13 13-13 13Z' fill='none' stroke='white' stroke-width='4'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="app-header">
+        <button class="brand" type="button" data-nav="home" aria-label="AI Deal Hunter home">
+          <span class="brand-mark" aria-hidden="true">◇</span>
+          <span>AI Deal Hunter</span>
+        </button>
+        <span class="phase-badge">Mock data</span>
+      </header>
+
+      <div class="connection-status" id="connection-status" role="status" aria-live="polite" hidden>
+        <span aria-hidden="true">○</span>
+        <div><strong>You’re offline</strong><small>Saved local data remains available. Source listings require a connection.</small></div>
+      </div>
+
+      <main id="app" tabindex="-1">
+        <section id="discovery-view">
+          <div class="hero" id="home-hero">
+            <p class="eyebrow">Smarter second-hand shopping</p>
+            <h1>Find Your Next Great Deal</h1>
+            <p class="hero-copy">Compare. Decide. Buy Smarter.</p>
+          </div>
+
+          <section class="search-panel" aria-labelledby="search-title">
+            <h2 class="sr-only" id="search-title">Search listings</h2>
+            <label class="search-box" for="search-input">
+              <span class="search-icon" aria-hidden="true">⌕</span>
+              <input id="search-input" type="search" placeholder="Search iPhone, RTX 5070, office chair…" autocomplete="off" />
+              <button class="clear-search" id="clear-search" type="button" aria-label="Clear search" hidden>×</button>
+            </label>
+          </section>
+
+          <section class="categories" aria-labelledby="categories-title">
+            <div class="section-heading compact-heading">
+              <div>
+                <p class="eyebrow">Browse</p>
+                <h2 id="categories-title">Categories</h2>
+              </div>
+            </div>
+            <div class="category-list" id="category-list" aria-label="Category shortcuts"></div>
+          </section>
+
+          <section class="deals-section" aria-labelledby="deals-title">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow" id="results-kicker">Recommended</p>
+                <h2 id="deals-title">Best Deals</h2>
+                <p class="result-count" id="result-count" aria-live="polite"></p>
+              </div>
+              <button class="filter-trigger" id="filter-trigger" type="button" aria-haspopup="dialog">
+                <span aria-hidden="true">☷</span>
+                Filters
+                <span class="filter-count" id="filter-count" hidden>0</span>
+              </button>
+            </div>
+
+            <div class="discovery-controls">
+              <label class="sort-control" for="sort-select">
+                <span>Sort</span>
+                <select id="sort-select">
+                  <option value="best-deals">Best Deals</option>
+                  <option value="deal-score">Deal Score</option>
+                  <option value="price-low">Price — Low to High</option>
+                  <option value="price-high">Price — High to Low</option>
+                  <option value="largest-discount">Largest Discount</option>
+                  <option value="newest">Newest</option>
+                  <option value="largest-price-drop">Largest Price Drop</option>
+                  <option value="near-me">Near Me · mock distance</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="active-filters" id="active-filters" aria-label="Active filters"></div>
+            <div class="deal-grid" id="deal-grid" aria-live="polite"></div>
+
+            <div class="empty-state" id="empty-state" hidden>
+              <span class="empty-icon" aria-hidden="true">⌕</span>
+              <h3>No deals match yet</h3>
+              <p>Try a broader search or clear some filters.</p>
+              <button class="secondary-button" id="empty-clear" type="button">Clear search and filters</button>
+            </div>
+          </section>
+        </section>
+
+        <section class="tracking-view" id="watchlist-view" hidden aria-labelledby="watchlists-title">
+          <header class="page-heading">
+            <div><p class="eyebrow">Saved locally</p><h1 id="watchlists-title">Watchlists</h1></div>
+            <button class="primary-button compact-button" id="new-watchlist" type="button">New watchlist</button>
+          </header>
+          <p class="page-intro">Organize listings and set targets for this local prototype.</p>
+          <div id="watchlist-content"></div>
+        </section>
+
+        <section class="tracking-view" id="alerts-view" hidden aria-labelledby="alerts-title">
+          <header class="page-heading">
+            <div><p class="eyebrow">Local prototype</p><h1 id="alerts-title">Alerts</h1></div>
+            <button class="primary-button compact-button" id="new-alert" type="button">New alert</button>
+          </header>
+          <p class="mock-disclosure">Mock alerts are checked only while using this prototype. There is no background monitoring or push delivery.</p>
+          <div id="alerts-content"></div>
+        </section>
+
+        <section class="tracking-view compare-view" id="compare-view" hidden aria-labelledby="compare-title">
+          <header class="page-heading">
+            <div><p class="eyebrow">2–4 listings</p><h1 id="compare-title">Compare</h1></div>
+            <button class="text-button" id="clear-compare-page" type="button">Clear</button>
+          </header>
+          <div id="compare-content"></div>
+        </section>
+
+        <section class="tracking-view settings-view" id="settings-view" hidden aria-labelledby="settings-title">
+          <header class="page-heading">
+            <div><p class="eyebrow">Local preferences</p><h1 id="settings-title">Settings</h1></div>
+          </header>
+          <p class="page-intro">Manage this browser’s prototype preferences and locally saved data.</p>
+          <div class="settings-stack" id="settings-content"></div>
+        </section>
+
+        <section class="detail-view" id="detail-view" hidden aria-labelledby="detail-title">
+          <header class="detail-nav">
+            <button class="detail-back" id="detail-back" type="button" aria-label="Back to deals">
+              <span aria-hidden="true">←</span>
+              <span>Back</span>
+            </button>
+            <span class="detail-brand">AI Deal Hunter</span>
+            <button class="icon-button" id="detail-close" type="button" aria-label="Close product detail">×</button>
+          </header>
+          <div id="detail-content"></div>
+        </section>
+      </main>
+    </div>
+
+    <dialog class="filter-dialog" id="filter-dialog" aria-labelledby="filter-title">
+      <form class="filter-form" id="filter-form">
+        <header class="filter-header">
+          <div>
+            <p class="eyebrow">Refine results</p>
+            <h2 id="filter-title">Filters</h2>
+          </div>
+          <button class="icon-button" id="close-filters" type="button" aria-label="Close filters">×</button>
+        </header>
+
+        <div class="filter-fields">
+          <label>Category<select name="category" data-options="category"></select></label>
+          <div class="field-pair">
+            <label>Minimum price<input name="minPrice" type="number" min="0" step="100" placeholder="฿0" /></label>
+            <label>Maximum price<input name="maxPrice" type="number" min="0" step="100" placeholder="Any" /></label>
+          </div>
+          <label>Minimum Deal Score<input name="minDealScore" type="number" min="0" max="100" step="5" placeholder="Any score" /></label>
+          <label>Condition<select name="condition" data-options="condition"></select></label>
+          <label>Location<select name="location" data-options="location"></select></label>
+          <label>Seller<select name="seller" data-options="seller"></select></label>
+          <label>Listing age
+            <select name="maxListingAgeDays">
+              <option value="">Any age</option>
+              <option value="1">Last 24 hours</option>
+              <option value="3">Last 3 days</option>
+              <option value="7">Last 7 days</option>
+              <option value="30">Last 30 days</option>
+            </select>
+          </label>
+          <label>Minimum price drop<input name="minPriceDropPercent" type="number" min="0" max="100" step="1" placeholder="Any drop %" /></label>
+          <label>Source<select name="source" data-options="source"></select></label>
+          <label>AI recommendation
+            <select name="recommendation">
+              <option value="">Any recommendation</option>
+              <option value="BUY">BUY</option>
+              <option value="NEGOTIATE">NEGOTIATE</option>
+              <option value="SKIP">SKIP</option>
+            </select>
+          </label>
+        </div>
+
+        <footer class="filter-actions">
+          <button class="text-button" id="clear-filters" type="button">Clear all</button>
+          <button class="primary-button" type="submit">Apply filters</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog class="workflow-dialog" id="watchlist-dialog" aria-labelledby="watchlist-dialog-title">
+      <form id="watchlist-form">
+        <header class="filter-header">
+          <div><p class="eyebrow">Saved locally</p><h2 id="watchlist-dialog-title">Choose watchlists</h2></div>
+          <button class="icon-button" type="button" data-close-dialog="watchlist-dialog" aria-label="Close watchlist dialog">×</button>
+        </header>
+        <input type="hidden" name="listingId" />
+        <div class="membership-list" id="watchlist-memberships"></div>
+        <label>New watchlist name<input name="newWatchlistName" maxlength="40" placeholder="e.g. iPhone shortlist" /></label>
+        <footer class="filter-actions"><button class="primary-button" type="submit">Save watchlists</button></footer>
+      </form>
+    </dialog>
+
+    <dialog class="workflow-dialog" id="target-dialog" aria-labelledby="target-dialog-title">
+      <form id="target-form">
+        <header class="filter-header">
+          <div><p class="eyebrow">Match preferences</p><h2 id="target-dialog-title">Target conditions</h2></div>
+          <button class="icon-button" type="button" data-close-dialog="target-dialog" aria-label="Close target conditions">×</button>
+        </header>
+        <input type="hidden" name="watchlistId" />
+        <div class="filter-fields">
+          <label>Target price<input name="targetPrice" type="number" min="0" step="100" placeholder="Any price" /></label>
+          <label>Target Deal Score<input name="minimumDealScore" type="number" min="0" max="100" step="1" placeholder="Any score" /></label>
+          <label>Minimum condition<select name="minimumCondition"><option value="">Any condition</option><option>Fair</option><option>Good</option><option>Very good</option><option>Excellent</option></select></label>
+          <label>Minimum battery health<input name="minimumBatteryHealth" type="number" min="0" max="100" step="1" placeholder="When applicable" /></label>
+          <label>Location<input name="location" placeholder="Any location" /></label>
+          <label>Category requirement<input name="categoryRequirement" placeholder="e.g. 256GB, receipt, charger" /></label>
+        </div>
+        <footer class="filter-actions"><button class="primary-button" type="submit">Save targets</button></footer>
+      </form>
+    </dialog>
+
+    <dialog class="workflow-dialog" id="alert-dialog" aria-labelledby="alert-dialog-title">
+      <form id="alert-form">
+        <header class="filter-header">
+          <div><p class="eyebrow">Local mock behavior</p><h2 id="alert-dialog-title">Create alert</h2></div>
+          <button class="icon-button" type="button" data-close-dialog="alert-dialog" aria-label="Close alert dialog">×</button>
+        </header>
+        <input type="hidden" name="alertId" />
+        <div class="filter-fields">
+          <label>Listing<select name="listingId" id="alert-listing"></select></label>
+          <label>Alert type<select name="type" id="alert-type"><option value="price">Price Alert</option><option value="deal-score">Deal Score Alert</option><option value="sold-removed">Sold / Removed Alert</option><option value="price-drop">Price Drop Alert</option></select></label>
+          <label id="alert-threshold-field">Target value<input name="threshold" type="number" min="0" step="1" /></label>
+          <label class="check-row"><input name="enabled" type="checkbox" checked /> Enabled</label>
+        </div>
+        <footer class="filter-actions"><button class="primary-button" type="submit">Save alert</button></footer>
+      </form>
+    </dialog>
+
+    <dialog class="workflow-dialog" id="reset-dialog" aria-labelledby="reset-dialog-title">
+      <form id="reset-form" method="dialog">
+        <header class="filter-header">
+          <div><p class="eyebrow">Data &amp; storage</p><h2 id="reset-dialog-title">Reset local prototype data?</h2></div>
+          <button class="icon-button" type="button" data-close-dialog="reset-dialog" aria-label="Close reset dialog">×</button>
+        </header>
+        <p class="reset-copy" id="reset-summary">This removes saved watchlists, targets, alerts, compare selections, and preferences from this browser.</p>
+        <footer class="filter-actions">
+          <button class="text-button" type="button" data-close-dialog="reset-dialog">Cancel</button>
+          <button class="danger-button" id="confirm-reset" type="submit" value="confirm">Reset local data</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <div class="compare-bar" id="compare-bar" hidden aria-live="polite">
+      <div><strong id="compare-count">0 selected</strong><div class="compare-chips" id="compare-chips"></div></div>
+      <div class="compare-bar-actions"><button class="text-button" id="clear-compare" type="button">Clear</button><button class="primary-button compact-button" id="open-compare" type="button">Compare</button></div>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+    <nav class="bottom-nav" aria-label="Primary navigation">
+      <button type="button" data-nav="home" aria-current="page"><span aria-hidden="true">⌂</span><span>Home</span></button>
+      <button type="button" data-nav="search"><span aria-hidden="true">⌕</span><span>Search</span></button>
+      <button type="button" data-nav="watchlist"><span aria-hidden="true">♡</span><span>Watchlist</span></button>
+      <button type="button" data-nav="alerts"><span aria-hidden="true">♢</span><span>Alerts</span></button>
+      <button type="button" data-nav="settings"><span aria-hidden="true">⚙</span><span>Settings</span></button>
+    </nav>
+
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
